@@ -1,0 +1,29 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import boxes from '../../assets/overlays/renders.json';
+
+/**
+ * An overlay's artwork as one 3× raster, placed in the 488×888 frame by renders.json
+ * (Campfire's is wider, for the fish that swims out past the card).
+ */
+interface Props {
+	name: keyof typeof boxes;
+	alt: string;
+}
+
+const { name, alt } = Astro.props;
+const renders = import.meta.glob<{ default: ImageMetadata }>('../../assets/overlays/*/render.webp', { eager: true });
+const src = renders[`../../assets/overlays/${name}/render.webp`].default;
+const box = boxes[name];
+---
+
+<Image
+	src={src}
+	width={box.width}
+	height={box.height}
+	densities={[1, 2, 3]}
+	alt={alt}
+	class="absolute block max-w-none"
+	style={`left:${box.x}px;top:${box.y}px`}
+/>

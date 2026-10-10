@@ -1,0 +1,60 @@
+---
+import Tag from './Tag.astro';
+import LinkHint from '../LinkHint.astro';
+
+/**
+ * An org on /work: a 4px rule down the left, then icon, title, roles, tags and
+ * whatever follows (description, project entries). `accent` is the colour the
+ * rule and header take while one of the section's entries is hovered.
+ */
+interface Props {
+	id: string;
+	title: string;
+	/** The org's own site; the title links there in a new tab, with a hint naming the host. */
+	href?: string;
+	roles?: string[];
+	tags?: string[];
+	accent?: string;
+	/** Key of an overlay shown while the section itself is hovered. */
+	overlay?: string;
+	class?: string;
+}
+
+const { id, title, href, roles = [], tags = [], accent, overlay, class: className } = Astro.props;
+---
+
+<section
+	class:list={['section flex items-stretch gap-3 text-cream', className]}
+	data-org={id}
+	data-hover={overlay}
+	style={accent ? `--org-accent: ${accent}` : undefined}
+>
+	<div class="section-rule w-1 shrink-0 self-stretch bg-current" aria-hidden="true"></div>
+	<div class="flex min-w-0 flex-1 flex-col items-start gap-4">
+		<header class="section-head flex w-full flex-col items-start gap-1">
+			{
+				href ? (
+					<>
+						<!-- Logo and title are one link, so the whole block (gap included) links. -->
+						<a href={href} target="_blank" rel="noopener" class="org-link has-hint flex flex-col items-start gap-1">
+							<slot name="icon" />
+							<h2 class="text-lg font-bold underline decoration-dotted decoration-from-font">{title}</h2>
+							<LinkHint href={href} />
+						</a>
+						{roles.length > 0 && <div class="-mt-1 flex w-full flex-col">{roles.map((r) => <p class="text-sm">{r}</p>)}</div>}
+					</>
+				) : (
+					<>
+						<slot name="icon" />
+						<div class="flex w-full flex-col">
+							<h2 class="text-lg font-bold">{title}</h2>
+							{roles.map((r) => <p class="text-sm">{r}</p>)}
+						</div>
+					</>
+				)
+			}
+			{tags.length > 0 && <div class="flex items-center gap-1">{tags.map((t) => <Tag>{t}</Tag>)}</div>}
+		</header>
+		<slot />
+	</div>
+</section>

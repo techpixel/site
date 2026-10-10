@@ -1,0 +1,19 @@
+---
+import OverlayRender from './OverlayRender.astro';
+
+/** Hover overlay for Horizons (Figma node 2412:1031): its artwork as one image. */
+---
+
+<div class="relative h-[888px] w-[488px] text-cream">
+	<div class="art absolute inset-0">
+		<OverlayRender name="horizons" alt="Photos from Horizons Nexus, Equinox and Arcana, above the Horizons website" />
+	</div>
+	<div class="caption text-base [&>p+p]:mt-[1lh]">
+		<p>
+			horizons was a series of 6 hackathons around the world in san francisco, sydney, berlin,
+			singapore, toronto, and cairo! we had 50 organizers and 350 attendees across all events. 650
+			teens worked for over 23,000 hours on over 1,700 approved technical projects as a part of
+			horizons.
+		</p>
+	</div>
+</div>

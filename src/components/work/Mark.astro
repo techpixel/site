@@ -1,0 +1,29 @@
+---
+/**
+ * A single-colour SVG drawn through a mask so it takes the current text colour
+ * (cream at rest, the hover accent on hover).
+ */
+interface Props {
+	src: string;
+	width: number;
+	height: number;
+	class?: string;
+}
+
+const { src, width, height, class: className } = Astro.props;
+---
+
+<span
+	class:list={['mark block shrink-0 bg-current', className]}
+	style={`--mark: url("${src}"); width: ${width}px; height: ${height}px;`}
+	aria-hidden="true"
+></span>
+
+<style>
+	.mark {
+		mask-image: var(--mark);
+		mask-size: contain;
+		mask-repeat: no-repeat;
+		mask-position: center;
+	}
+</style>

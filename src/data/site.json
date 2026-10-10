@@ -1,0 +1,16 @@
+{
+  "socials": [
+    { "id": "linkedin", "label": "LinkedIn", "href": "https://www.linkedin.com/in/manitej-boorgu-739370232" },
+    { "id": "github", "label": "GitHub", "href": "https://github.com/techpixel" }
+  ],
+  "song": {
+    "label": "this year’s song",
+    "title": "leave it all behind, mike",
+    "artist": "night tapes"
+  },
+  "projects": [
+    { "id": "midnight", "label": "Midnight (HC 2026)", "href": "https://midnight.hackclub.com" },
+    { "id": "horizons", "label": "Horizons (HC 2026)", "href": "https://horizons.hackclub.com" },
+    { "id": "arcade", "label": "Arcade (GH + HC 2024)", "href": "https://hackclub.com/arcade" }
+  ]
+}

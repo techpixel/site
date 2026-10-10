@@ -1,0 +1,89 @@
+---
+import Tag from './Tag.astro';
+import Mark from './Mark.astro';
+import LinkHint from '../LinkHint.astro';
+
+/**
+ * One bullet in a project list: bullet, optional 36px mark, name (time), the role title,
+ * then either a row of small links ("Github • Website • HCB") or, for personal projects,
+ * a linked name.
+ */
+interface Props {
+	id: string;
+	name: string;
+	time: string;
+	title?: string;
+	href?: string;
+	links?: Record<string, string>;
+	tags?: string[];
+	logo?: { src: string; width: number; height: number };
+	mark?: string;
+	color?: string;
+	overlay?: string;
+}
+
+const { id, name, time, title, href, links = {}, tags = [], logo, mark, color, overlay } = Astro.props;
+const label = `${name} (${time})`;
+const labels: Record<string, string> = { github: 'Github', website: 'Website', hcb: 'HCB' };
+const sublinks = Object.entries(links).map(([key, url]) => [labels[key] ?? key[0].toUpperCase() + key.slice(1), url]);
+---
+
+<li
+	class="entry flex w-full items-center gap-2 py-2"
+	data-project={id}
+	data-hover={overlay}
+	style={color ? `--accent: ${color}` : undefined}
+>
+	<span class="size-1 shrink-0 rounded-full bg-current" aria-hidden="true"></span>
+	{
+		(logo || mark) && (
+			<span class="flex size-9 shrink-0 items-center justify-center p-0.5">
+				{logo ? (
+					<Mark src={logo.src} width={Math.min(32, logo.width)} height={Math.min(32, logo.height)} />
+				) : (
+					<span class="grid size-8 place-items-center rounded-[6px] bg-current" aria-hidden="true">
+						<span class="text-xl leading-none font-bold text-black">{mark}</span>
+					</span>
+				)}
+			</span>
+		)
+	}
+	<div class="flex flex-col items-start justify-center gap-0.5">
+		{
+			href ? (
+				<a href={href} target="_blank" rel="noopener" class="has-hint text-base whitespace-nowrap underline decoration-from-font">
+					{label}
+					<LinkHint href={href} />
+				</a>
+			) : (
+				<span class="text-base whitespace-nowrap">{label}</span>
+			)
+		}
+		{title && <p class="text-xs whitespace-nowrap">{title}</p>}
+		{
+			sublinks.length > 0 && (
+				<p class="sublinks text-xs whitespace-nowrap">
+					{sublinks.map(([text, url], i) => (
+						<>
+							{i > 0 && <span aria-hidden="true"> • </span>}
+							<a href={url} target="_blank" rel="noopener" class="has-hint underline decoration-from-font">
+								{text}
+								<LinkHint href={url} />
+							</a>
+						</>
+					))}
+				</p>
+			)
+		}
+		{tags.length > 0 && <div class="mt-1 flex items-center gap-1">{tags.map((t) => <Tag>{t}</Tag>)}</div>}
+	</div>
+</li>
+
+<style>
+	/* The links share the entry's colour (cream at rest, the project colour on hover).
+	   The one under the pointer lifts toward cream, half-and-half with that colour, rather
+	   than darkening (as techpixel/portfolio's link tints). */
+	.sublinks a:hover {
+		color: color-mix(in srgb, currentColor 50%, var(--color-cream));
+	}
+</style>

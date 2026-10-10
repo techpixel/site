@@ -1,0 +1,43 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import SEO from '../components/SEO.astro';
+import type { Props as SEOProps } from '../components/SEO.astro';
+
+export interface Props extends SEOProps {
+	class?: string;
+}
+
+const { class: className, ...seo } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<SEO {...seo} />
+		<!-- Client-side navigation: pages swap in place with a cross-fade, and the sidebar
+		     (transition:persist) stays put. -->
+		<ClientRouter />
+		<!-- The load fade is for a fresh load only; swapped-in pages already cross-fade. -->
+		<script is:inline>
+			document.addEventListener('astro:before-swap', (e) => {
+				e.newDocument.documentElement.classList.add('page-transition');
+			});
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&display=swap"
+			rel="stylesheet"
+		/>
+	</head>
+	<body class={className}>
+		<slot />
+		<script>
+			import '../scripts/link-hints';
+		</script>
+	</body>
+</html>

@@ -1,0 +1,289 @@
+---
+import { Image } from 'astro:assets';
+import Layout from '../layouts/Layout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Warp from '../components/Warp.svelte';
+import Portrait from '../components/Portrait.svelte';
+import site from '../data/site.json';
+
+// Flat "YOU'RE ON MANITEJ DOT COM" (manitej.com-2, src/assets/foreground.svg @ 2f1591b); Warp bends it live.
+import headline from '../assets/headline-flat.svg?raw';
+// Full-tone portrait from techpixel/portfolio; Portrait.svelte dithers it on the client.
+import portrait from '../assets/portrait.webp';
+import songArt from '../assets/figma/song-art.png';
+import iconLinkedin from '../assets/figma/icon-linkedin.svg?url';
+import iconGithub from '../assets/figma/icon-github.svg?url';
+import iconInstagram from '../assets/figma/icon-instagram.svg?url';
+import logoMidnight from '../assets/figma/logo-midnight.svg?url';
+import logoHorizons from '../assets/figma/logo-horizons.svg?url';
+import logoArcade from '../assets/figma/logo-arcade.svg?url';
+
+const socialIcons: Record<string, string> = {
+	linkedin: iconLinkedin,
+	github: iconGithub,
+	instagram: iconInstagram,
+};
+
+// Logo boxes are 28×28; Midnight's mark is 28×21.3 and sits centered.
+const projectLogos: Record<string, { src: string; width: number; height: number }> = {
+	midnight: { src: logoMidnight, width: 28, height: 21.3251 },
+	horizons: { src: logoHorizons, width: 28, height: 28 },
+	arcade: { src: logoArcade, width: 28, height: 28 },
+};
+---
+
+<Layout>
+	<main id="home" class="relative min-h-screen overflow-clip">
+		<!-- Checkerboard, bottom-right -->
+		<div class="checkerboard pointer-events-none absolute right-0 bottom-0 size-[190px] md:size-[700px]" aria-hidden="true"></div>
+
+		<!-- Headline (desktop): flat SVG, waved live by Warp, centered in the 106px band top-right. -->
+		<div
+			class="pointer-events-none absolute top-[33px] right-0 hidden aspect-[4362/203] w-[855px] max-w-[62vw] text-[#f4f1e4] md:block"
+			aria-label="You're on manitej dot com"
+			role="img"
+		>
+			<Warp
+				client:only="svelte"
+				svg={headline}
+				mode="wave"
+				fit="natural"
+				class="headline size-full opacity-0 transition-opacity duration-700 ease-out [&.warp-ready]:opacity-100 [&_path]:fill-current"
+				complexity={8}
+				interpolation={40}
+				buffer={30}
+				amplitude={170}
+				speed={0.6}
+				period={900}
+			/>
+		</div>
+
+		<!-- Headline (mobile): same flat SVG, ghosted and rotated 90° down the right edge. -->
+		<div
+			class="pointer-events-none absolute inset-y-0 right-[2px] w-[106px] [container-type:size] md:hidden"
+			aria-hidden="true"
+		>
+			<div
+				class="absolute top-1/2 left-1/2 aspect-[4362/203] w-[100cqh] -translate-x-1/2 -translate-y-1/2 rotate-90 text-[#393a42]"
+			>
+				<Warp
+					client:only="svelte"
+					svg={headline}
+					mode="wave"
+					fit="natural"
+					class="headline size-full opacity-0 transition-opacity duration-700 ease-out [&.warp-ready]:opacity-100 [&_path]:fill-current"
+					complexity={8}
+					interpolation={40}
+					buffer={30}
+					amplitude={170}
+					speed={0.6}
+					period={900}
+				/>
+			</div>
+		</div>
+
+		<div class="relative z-10 flex min-h-screen flex-col px-6 pt-[34px] pb-[30px] md:min-h-0 md:flex-row md:items-start md:gap-[26px] md:p-6">
+			<Sidebar current="home" />
+
+			<div class="flex w-full max-w-[486px] flex-col gap-[50px] md:gap-5">
+				<!-- Photo + bio -->
+				<section class="flex flex-col items-start gap-4 md:gap-3">
+					<div class="relative isolate size-[171px] shrink-0 md:size-[300px]">
+						<Portrait
+							client:load
+							src={portrait.src}
+							width={300}
+							height={300}
+							cell={2}
+							alt="Manitej smiling in front of a wall of framed photos"
+						/>
+						<div class="absolute inset-0 bg-cream mix-blend-multiply" aria-hidden="true"></div>
+					</div>
+
+					<div class="w-[290px] text-xs text-cream md:w-full md:text-base [&>p+p]:mt-[1lh]">
+						<p>
+							<strong class="font-bold">Hey!</strong> My name is Manitej!{' '}
+							<span class="text-accent">(man-uh-tehj)</span>
+						</p>
+						<p>
+							I’m a programmer and designer currently studying Computer Science at Purdue
+							University. I enjoy making <em>things</em> and getting into random side tangents.
+						</p>
+						<p>
+							Previously, I’ve worked at{' '}
+							<a
+								href="https://hackclub.com"
+								target="_blank"
+								rel="noopener"
+								class="underline decoration-from-font hover:text-accent">Hack Club</a
+							>{' '}
+							building programs and running events for technical teenagers and helping them become
+							great builders and doers.
+						</p>
+						<p id="contact">
+							You can reach me at{' '}
+							<a
+								href="#"
+								class="underline decoration-from-font hover:text-accent"
+								data-email-user="me"
+								data-email-domain="manitej.com"
+								data-email-action="copy"
+								data-email-display
+								aria-label="Copy email address"></a
+							>
+							<br />Feel free to say hello!
+						</p>
+					</div>
+
+					<ul class="flex items-center gap-[10px] pt-1">
+						{
+							site.socials
+								.filter((s) => s.href)
+								.map((s) => (
+								<li>
+									<a
+										href={s.href}
+										target={s.href.startsWith('http') ? '_blank' : undefined}
+										rel="noopener"
+										aria-label={s.label}
+										class="block size-5 hover:opacity-70"
+									>
+										<img src={socialIcons[s.id]} width="20" height="20" alt="" class="block size-full" />
+									</a>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+
+				<!-- Song + projects -->
+				<!-- Hidden on desktop viewports too short to fit it without scrolling (see the fold style below). -->
+				<section id="work" class="fold flex flex-wrap items-start gap-x-12 gap-y-6">
+					<div class="flex flex-col items-start gap-[6px]">
+						<h2 class="text-sm font-bold whitespace-nowrap text-cream md:text-base">{site.song.label}</h2>
+						<div class="relative isolate size-[100px]">
+							<Image
+								src={songArt}
+								width={100}
+								height={100}
+								densities={[1, 2]}
+								alt={`Album art for ${site.song.title} by ${site.song.artist}`}
+								class="absolute inset-0 size-full object-cover"
+							/>
+							<div class="absolute inset-0 bg-cream mix-blend-saturation" aria-hidden="true"></div>
+							<div class="absolute inset-0 bg-cream mix-blend-hue" aria-hidden="true"></div>
+						</div>
+						<p class="text-xs whitespace-nowrap text-cream">
+							{site.song.title}<br />
+							<span class="text-accent">{site.song.artist}</span>
+						</p>
+					</div>
+
+					<div class="flex w-[167px] flex-col items-start gap-2">
+						<h2 class="text-sm font-bold text-cream md:text-base">stuff i’ve done</h2>
+						<ul class="flex h-[100px] w-[215px] flex-col items-start justify-between">
+							{
+								site.projects.map((p) => {
+									const logo = projectLogos[p.id];
+									return (
+										<li>
+											<a
+												href={p.href}
+												target="_blank"
+												rel="noopener"
+												class="flex items-center gap-2 text-sm whitespace-nowrap text-cream hover:text-accent md:text-base"
+											>
+												<span class="flex size-7 shrink-0 items-center justify-center">
+													<img
+														src={logo.src}
+														width={logo.width}
+														height={logo.height}
+														alt=""
+														class="block"
+													/>
+												</span>
+												{p.label}
+											</a>
+										</li>
+									);
+								})
+							}
+						</ul>
+						<a
+							href="/work"
+							class="pt-1 text-xs leading-none text-accent underline decoration-from-font hover:text-cream"
+						>
+							view more projects
+						</a>
+					</div>
+				</section>
+			</div>
+		</div>
+	</main>
+</Layout>
+
+<script>
+	// Email links are assembled at runtime from data-* parts so the address
+	// never appears literally in the static HTML. "copy" links copy to the
+	// clipboard and show a brief toast; "mailto" links get a real href.
+	const copiedMessages = ['copied!', 'copied!', 'copied!', 'okay'];
+
+	// On every page load, since the client router swaps pages in without reloading.
+	document.addEventListener('astro:page-load', () => {
+		for (const link of document.querySelectorAll<HTMLAnchorElement>('a[data-email-user]')) {
+			const user = link.dataset.emailUser ?? '';
+			const domain = link.dataset.emailDomain ?? '';
+			const real = `${user}@${domain}`;
+
+			if ('emailDisplay' in link.dataset) {
+				link.textContent = `(${user} at ${domain.replace(/\./g, ' dot ')})`;
+			}
+
+			if (link.dataset.emailAction === 'mailto') {
+				link.href = `mailto:${real}`;
+				continue;
+			}
+
+			let note: HTMLSpanElement | null = null;
+			let timer: number | null = null;
+			let clicks = 0;
+			link.addEventListener('click', async (e) => {
+				e.preventDefault();
+				try {
+					await navigator.clipboard.writeText(real);
+					if (!note) {
+						note = document.createElement('span');
+						note.className = 'copied-note';
+						link.insertAdjacentElement('afterend', note);
+					}
+					note.textContent = ' ' + copiedMessages[clicks % copiedMessages.length];
+					clicks++;
+					note.classList.add('show');
+					if (timer) clearTimeout(timer);
+					timer = window.setTimeout(() => note?.classList.remove('show'), 1400);
+				} catch {
+					window.location.href = `mailto:${real}`;
+				}
+			});
+		}
+	});
+</script>
+
+<style>
+	/* The song/projects row needs the page to be about 820px tall on desktop; below that it goes. */
+	@media (min-width: 768px) and (max-height: 819px) {
+		.fold {
+			display: none;
+		}
+	}
+
+	:global(.copied-note) {
+		font-style: italic;
+		color: var(--color-accent);
+		opacity: 0;
+		transition: opacity 200ms ease;
+	}
+	:global(.copied-note.show) {
+		opacity: 1;
+	}
+</style>

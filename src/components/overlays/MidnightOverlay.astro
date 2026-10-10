@@ -1,0 +1,18 @@
+---
+import OverlayRender from './OverlayRender.astro';
+
+/** Hover overlay for Midnight (Figma node 2412:1041): its artwork as one image. */
+---
+
+<div class="relative h-[888px] w-[488px] text-cream">
+	<div class="art absolute inset-0">
+		<OverlayRender name="midnight" alt="Midnight attendees in Vienna, above the Midnight website" />
+	</div>
+	<div class="caption text-base [&>p+p]:mt-[1lh]">
+		<p>
+			midnight was a hackathon that brought 70+ teenagers around the world to Vienna, Austria to
+			build projects at a murder mystery-themed hackathon! midnight also included an online component
+			with 200 teenagers working for 10,000 hours on 600 technical projects.
+		</p>
+	</div>
+</div>

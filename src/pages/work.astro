@@ -1,0 +1,302 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import WorkSection from '../components/work/WorkSection.astro';
+import ProjectEntry from '../components/work/ProjectEntry.astro';
+import Mark from '../components/work/Mark.astro';
+import HorizonsOverlay from '../components/overlays/HorizonsOverlay.astro';
+import MidnightOverlay from '../components/overlays/MidnightOverlay.astro';
+import ArcadeOverlay from '../components/overlays/ArcadeOverlay.astro';
+import CampfireOverlay from '../components/overlays/CampfireOverlay.astro';
+import ManifestoOverlay from '../components/overlays/ManifestoOverlay.astro';
+import PurdueHackersOverlay from '../components/overlays/PurdueHackersOverlay.astro';
+import OrchardOverlay from '../components/overlays/OrchardOverlay.astro';
+import HackClubOverlay from '../components/overlays/HackClubOverlay.astro';
+
+import hackClubFlag from '../assets/work/hack-club-flag.svg?url';
+import purdueHackers from '../assets/work/purdue-hackers.svg?url';
+import orchardMark from '../assets/work/orchard.svg?url';
+import logoHorizons from '../assets/figma/logo-horizons.svg?url';
+import logoArcade from '../assets/figma/logo-arcade.svg?url';
+import logoMidnight from '../assets/work/logo-midnight.svg?url';
+import logoCampfire from '../assets/work/logo-campfire.png?url';
+import logoManifesto from '../assets/work/logo-manifesto.svg?url';
+
+// Marks the YAML's `logo` keys resolve to (intrinsic sizes; drawn into a 32px box).
+const logos: Record<string, { src: string; width: number; height: number }> = {
+	horizons: { src: logoHorizons, width: 32, height: 32 },
+	arcade: { src: logoArcade, width: 32, height: 32 },
+	midnight: { src: logoMidnight, width: 32, height: 24.37 },
+	campfire: { src: logoCampfire, width: 32, height: 32 },
+	manifesto: { src: logoManifesto, width: 32, height: 32 },
+};
+
+// Overlays the YAML's `overlay` keys resolve to. Add one per Hack Club project.
+const overlays: Record<string, typeof HorizonsOverlay> = {
+	horizons: HorizonsOverlay,
+	midnight: MidnightOverlay,
+	arcade: ArcadeOverlay,
+	campfire: CampfireOverlay,
+	manifesto: ManifestoOverlay,
+	'hack-club': HackClubOverlay,
+	'purdue-hackers': PurdueHackersOverlay,
+	orchard: OrchardOverlay,
+};
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const hackClub = projects.filter((p) => p.data.section === 'hack-club');
+const personal = projects.filter((p) => p.data.section === 'personal' && p.data.featured);
+// Everything that shows an overlay while hovered: project entries (from the YAML)
+// plus the sections below, which name their overlay inline. They all show to the
+// right of the column.
+const hoverKeys = [
+	...projects.map((p) => p.data.overlay).filter((k): k is string => !!k && k in overlays),
+	'hack-club',
+	'purdue-hackers',
+	'orchard',
+];
+
+// Hovering a target shows its overlay: one rule per key, since CSS can't match the
+// two attributes against each other. A section is also :hover while one of its
+// entries is, so a second, more specific rule hides the section's own overlay then.
+const overlayCss = hoverKeys
+	.map(
+		(k) =>
+			`@media (hover:hover){` +
+			`.work:has([data-hover="${k}"]:hover) [data-overlay="${k}"]{opacity:1;visibility:visible;transition-delay:0s}` +
+			`.work:has([data-hover="${k}"] [data-hover]:hover) [data-overlay="${k}"]{opacity:0}` +
+			`}`,
+	)
+	.join('\n');
+---
+
+<Layout title="work" description="Programs, events and products Manitej has designed and built." class="bg-black">
+	<main class="work relative min-h-screen overflow-clip bg-black">
+		<div
+			class="relative z-10 flex min-h-screen flex-col px-6 pt-[34px] pb-[30px] md:min-h-0 md:flex-row md:items-start md:gap-[26px] md:p-6"
+		>
+			<Sidebar current="work" />
+
+			<!-- One column that scrolls with the page; hover overlays show beside it. -->
+			<div class="flex w-full max-w-[417px] flex-col gap-6">
+				<WorkSection
+					id="hack-club"
+					title="Hack Club"
+					href="https://hackclub.com"
+					roles={['Engineering Intern (2024)', 'Gap Year Fellow (2025-2026)']}
+					tags={['Product Design', 'UI/UX & Brand Design', 'Engineering']}
+					accent="#ff6a73"
+					overlay="hack-club"
+				>
+					<Mark slot="icon" src={hackClubFlag} width={68} height={24} />
+					<div class="text-base text-accent [&>p+p]:mt-[1lh]">
+						<p>
+							Hack Club is an international non-profit dedicated to supporting teenage builders
+							(“hackers”) in their journey. During my time at Hack Club, I designed and built
+							educational high-agency programs from scratch.
+						</p>
+						<p>
+							Programs I’ve built have a combined spend of $1M, funding 12,000+ teenagers who have
+							spent ~100,000 hours on 6,000+ projects. My work has been highly varied, ranging from UX
+							design and full stack engineering, to product design and management.
+						</p>
+					</div>
+					<ul class="-my-2 flex w-full flex-col items-start">
+						{
+							hackClub.map((p) => (
+								<ProjectEntry
+									id={p.id}
+									name={p.data.name}
+									time={p.data.time}
+									title={p.data.title}
+									links={p.data.links}
+									tags={p.data.tags}
+									logo={p.data.logo ? logos[p.data.logo] : undefined}
+									mark={p.data.mark}
+									color={p.data.color}
+									overlay={p.data.overlay && overlays[p.data.overlay] ? p.data.overlay : undefined}
+								/>
+							))
+						}
+					</ul>
+				</WorkSection>
+
+				<WorkSection
+					id="purdue-hackers"
+					title="Purdue Hackers"
+					href="https://purduehackers.com"
+					roles={['Organizer & Designer (2026-)']}
+					tags={['Design']}
+					accent="#fcd202"
+					overlay="purdue-hackers"
+				>
+					<Mark slot="icon" src={purdueHackers} width={24} height={24} />
+					<p class="text-base text-accent">
+						Purdue Hackers is a collective of hobbyists, engineers, and artists who believe that the
+						best way of getting good at anything is by building technical and creative projects.
+					</p>
+				</WorkSection>
+
+				<WorkSection
+					id="orchard"
+					title="Orchard"
+					roles={['Volunteer Designer (2026)']}
+					tags={['Design', 'Branding']}
+					accent="#f9445a"
+					overlay="orchard"
+				>
+					<Mark slot="icon" src={orchardMark} width={24} height={24} />
+					<div class="text-base text-accent [&>p+p]:mt-[1lh]">
+						<p>
+							Orchard is an opinionated and easy to set up self-hosted PaaS using Kubernetes as its
+							underlying orchestration engine. I provided branding and UX design input for Orchard.
+						</p>
+						<p>Orchard is still in development! It will be released <em>eventually</em>.</p>
+					</div>
+				</WorkSection>
+
+				<WorkSection id="personal" title="Personal Projects" accent="#ffeedc">
+					<p class="text-base text-accent">These are just things I work on in my free time.</p>
+					<ul class="-my-2 flex w-full flex-col items-start">
+						{
+							personal.map((p) => (
+								<ProjectEntry id={p.id} name={p.data.name} time={p.data.time} href={p.data.href} />
+							))
+						}
+						<li class="py-2">
+							<a
+								href="/projects"
+								class="text-xs whitespace-nowrap text-cream underline decoration-from-font hover:text-accent"
+							>
+								View More (2020-2026)
+							</a>
+						</li>
+					</ul>
+				</WorkSection>
+
+				<div class="card relative h-[76px] w-full overflow-clip bg-cream">
+					<p class="absolute top-[18px] left-[20px] text-base whitespace-nowrap text-black">
+						looking for my design work?<br />
+						<a
+							href="https://portfolio.manitej.com"
+							target="_blank"
+							rel="noopener"
+							class="underline decoration-from-font hover:text-ink">view my portfolio</a
+						>
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Hover overlays, pinned to the viewport beside the column while the page scrolls.
+		     The stage starts 24px into the 48px gutter right of the column, so the overlays'
+		     own 24px margin keeps that gutter. -->
+		<div
+			class="overlay-stage pointer-events-none fixed top-0 left-[644px] z-20 hidden h-[888px] w-[488px] lg:block"
+			aria-hidden="true"
+		>
+			{
+				hoverKeys.map((key) => {
+					const Overlay = overlays[key];
+					return (
+						<div class="overlay absolute inset-0 opacity-0" data-overlay={key}>
+							<Overlay />
+						</div>
+					);
+				})
+			}
+		</div>
+	</main>
+</Layout>
+
+<style is:inline set:html={overlayCss}></style>
+
+<style is:global>
+	html,
+	body {
+		background: #000;
+		--sidebar-ink: #000;
+	}
+</style>
+
+<style>
+	/* Section rules and headers take the org accent while one of their entries is hovered. */
+	.work :global(.section-rule),
+	.work :global(.section-head) {
+		color: var(--head, var(--color-cream));
+		transition: color 200ms ease;
+	}
+	.work :global(.entry) {
+		transition:
+			opacity 200ms ease,
+			color 200ms ease;
+	}
+	/* Plain arrow over text too (links keep their pointer): the page is for hovering,
+	   and the text-selection I-beam flickers in and out as the pointer crosses it. */
+	.work {
+		cursor: default;
+	}
+	.work :global(.section),
+	.card {
+		transition: opacity 200ms ease;
+	}
+
+	/* Each overlay is an artwork layer plus a caption. On short desktop viewports only
+	   the artwork scales down (about its top-left,
+	   so it stays aligned with the column); the caption keeps its size and just moves up. */
+	.overlay-stage {
+		--overlay-scale: min(var(--scale-h, 1), var(--scale-w, 1));
+	}
+	/* Off overlays are hidden outright (after their fade), so live animations inside them
+	   (Warp checks visibility) stop running in the background. */
+	.overlay {
+		visibility: hidden;
+		transition:
+			opacity 200ms ease,
+			visibility 0s linear 200ms;
+	}
+	.overlay :global(.art) {
+		background: #000;
+		transform-origin: top left;
+		transform: scale(var(--overlay-scale, 1));
+	}
+	.overlay :global(.caption) {
+		position: absolute;
+		top: calc(690px * var(--overlay-scale, 1));
+		left: 24px;
+		width: 418px;
+	}
+	@media (min-width: 1024px) and (max-height: 880px) {
+		.overlay-stage {
+			--scale-h: 0.9;
+		}
+	}
+	@media (min-width: 1024px) and (max-height: 800px) {
+		.overlay-stage {
+			--scale-h: 0.8;
+		}
+	}
+	@media (min-width: 1024px) and (max-height: 710px) {
+		.overlay-stage {
+			--scale-h: 0.7;
+		}
+	}
+
+	@media (hover: hover) {
+		/* A section lights up when one of its entries, or the section itself, is hovered. */
+		.work :global(.section:has(.entry:hover)),
+		.work :global(.section[data-hover]:hover) {
+			--head: var(--org-accent, var(--color-cream));
+		}
+		.work :global(.entry:hover) {
+			color: var(--accent, var(--color-cream));
+		}
+		/* Everything outside whichever section the pointer is in steps back, overlay or not.
+		   Hovering the portfolio card dims nothing. */
+		.work:has(:global(.section:hover)) :global(.section:not(:hover)),
+		.work:has(:global(.section:hover)) .card {
+			opacity: 0.6;
+		}
+	}
+</style>

@@ -1,0 +1,41 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import ProjectEntry from '../components/work/ProjectEntry.astro';
+
+/**
+ * Every personal project (Figma node 2423:1789), reached from /work's "View More".
+ * Same YAML as /work: section `personal` lists here in full, `older` below it.
+ */
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const personal = projects.filter((p) => p.data.section === 'personal');
+const older = projects.filter((p) => p.data.section === 'older');
+---
+
+<Layout title="projects" description="Side projects Manitej has built since 2020." class="bg-black">
+	<main class="flex min-h-screen flex-col gap-6 bg-black px-6 pt-[34px] pb-[30px] md:flex-row md:items-start md:gap-[44px] md:p-6">
+		<nav class="w-[153px] shrink-0 pb-1" aria-label="Primary">
+			<a href="/work" class="block text-2xl text-cream hover:text-accent">← back</a>
+		</nav>
+
+		<!-- Each entry carries 8px of vertical padding; the lists' -my-2 cancels it at the
+		     ends so the flex gaps here are the visible gaps to the entries' text. -->
+		<section class="flex max-w-[417px] items-stretch gap-3 text-cream md:mt-[30px] md:w-[417px]">
+			<div class="w-1 shrink-0 self-stretch bg-current" aria-hidden="true"></div>
+			<div class="flex min-h-[442px] min-w-0 flex-1 flex-col items-start gap-6">
+				<div class="flex flex-col items-start gap-4">
+					<h1 class="text-2xl font-bold">Personal Projects</h1>
+					<ul class="-my-2 flex flex-col items-start">
+						{personal.map((p) => <ProjectEntry id={p.id} name={p.data.name} time={p.data.time} href={p.data.href} />)}
+					</ul>
+				</div>
+				<div class="flex flex-col items-start gap-2">
+					<h2 class="text-xs text-[#d0b79d]">Older Projects (Stuff from when I was 13)</h2>
+					<ul class="-my-2 flex flex-col items-start">
+						{older.map((p) => <ProjectEntry id={p.id} name={p.data.name} time={p.data.time} href={p.data.href} />)}
+					</ul>
+				</div>
+			</div>
+		</section>
+	</main>
+</Layout>

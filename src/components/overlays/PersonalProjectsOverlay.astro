@@ -1,0 +1,38 @@
+---
+import Warp from '../Warp.svelte';
+import text from '../../assets/overlays/personal/text.svg?raw';
+
+/**
+ * Hover overlay for Personal Projects (Figma node 2423:2368): a #5B5770 card tiled with
+ * columns of "MY NAME IS MANITEJ BOORGU AND I DO RANDOM THINGS SOMETIMES" in faint white,
+ * carried along by Warp's flow mode: a sliding, divergence-free current of meanders. text.svg is built by scripts/personal-text.py from the
+ * outlined column in Figma (node 2423:2416), rotated and repeated across the card.
+ */
+---
+
+<div class="relative h-[888px] w-[488px]">
+	<div class="art absolute inset-0">
+		<div class="absolute top-[48px] left-[39px] h-[611px] w-[411px] overflow-clip bg-[#5b5770]">
+			<Warp
+				client:only="svelte"
+				svg={text}
+				mode="flow"
+				fit="natural"
+				class="personal-text size-full"
+				interpolation={60}
+				amplitude={14}
+				speed={0.5}
+				period={260}
+			/>
+		</div>
+	</div>
+</div>
+
+<style>
+	/* The outlines come out of Figma with a placeholder fill; the design is white at 10%.
+	   Global because the host is a Svelte island, which Astro's scoped selectors don't reach. */
+	:global(.personal-text path) {
+		fill: #fff;
+		fill-opacity: 0.1;
+	}
+</style>

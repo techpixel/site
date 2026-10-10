@@ -1,0 +1,50 @@
+{
+	"horizons": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	},
+	"midnight": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	},
+	"arcade": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	},
+	"campfire": {
+		"x": 0,
+		"y": 0,
+		"width": 524,
+		"height": 888
+	},
+	"manifesto": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	},
+	"hack-club": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	},
+	"purdue": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	},
+	"orchard": {
+		"x": 0,
+		"y": 0,
+		"width": 488,
+		"height": 888
+	}
+}

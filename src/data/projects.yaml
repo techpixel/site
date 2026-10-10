@@ -1,0 +1,130 @@
+# Projects listed on /work. Order here is display order.
+#   section: hack-club → the Hack Club list (left column); personal → Personal Projects (right);
+#            older → the "Older Projects" group on /projects only
+#   featured: personal projects also listed on /work (/projects lists every personal project)
+#   title:   role on the project, shown under the name (from the resume)
+#   links:   Hack Club projects: small links under the title, shown as "Github • Website • HCB"
+#            (keys github / website / hcb get those labels; any other key is capitalised)
+#   href:    personal projects: the name itself links here
+#   logo:    a mark in src/pages/work.astro's logo map (SVG or alpha PNG in src/assets/work or src/assets/figma)
+#   color:   hover accent for the entry (name, mark, tags, sublinks)
+#   overlay: component in src/components/overlays shown while the entry is hovered
+- id: horizons
+  name: Horizons
+  time: HC 2026
+  section: hack-club
+  title: Lead UI/UX Designer & Engineer
+  links:
+    github: https://github.com/hackclub/horizons
+    website: https://horizons.hackclub.com
+    hcb: https://hcb.hackclub.com/horizons
+  logo: horizons
+  color: "#ffa400"
+  overlay: horizons
+
+- id: midnight
+  name: Midnight
+  time: HC 2026
+  section: hack-club
+  title: UI/UX Designer & Lead Frontend Engineer
+  links:
+    github: https://github.com/hackclub/midnight
+    website: https://midnight.hackclub.com
+    hcb: https://hcb.hackclub.com/midnight
+  logo: midnight
+  color: "#7b6da1" # Midnight's text tint in techpixel/portfolio (its bar is #453b61)
+  overlay: midnight
+
+- id: arcade
+  name: Arcade
+  time: GH + HC 2024
+  section: hack-club
+  title: Program Designer & Engineer
+  links:
+    # github: (no public hackclub/arcade repo found)
+    website: https://hackclub.com/arcade
+    hcb: https://hcb.hackclub.com/arcade
+  logo: arcade
+  color: "#ff5c02"
+  overlay: arcade
+
+- id: campfire
+  name: Campfire
+  time: HC 2026
+  section: hack-club
+  title: Engineering & Design
+  links:
+    github: https://github.com/hackclub/campfire
+    website: https://campfire.hackclub.com
+    hcb: https://hcb.hackclub.com/campfire
+  logo: campfire
+  color: "#5cbff8"
+  overlay: campfire
+
+- id: manifesto
+  name: Manifesto
+  time: HC 2026
+  section: hack-club
+  title: Designer
+  links:
+    github: https://github.com/hackclub/manifesto
+    website: https://manifesto.hackclub.com
+  logo: manifesto
+  color: "#ec3750"
+  overlay: manifesto
+
+- id: audio-visual
+  name: TBD Audio Visual Project
+  time: 2026, Current
+  section: personal
+  featured: true
+
+- id: hero
+  name: Hero
+  time: 2026, In Development
+  section: personal
+  href: https://github.com/techpixel/hero
+  featured: true
+
+- id: gitgirl
+  name: GitGirl
+  time: "2026"
+  section: personal
+  href: https://github.com/techpixel/gitgirl
+
+- id: how-to-not-kill-people
+  name: How to Not Kill People
+  time: 2026, Minijam
+  section: personal
+  href: https://techpixel.itch.io/how-to-not-kill-people
+
+- id: this-website
+  name: This website!
+  time: 2022-2026
+  section: personal
+  featured: true
+  href: https://github.com/techpixel/site
+
+- id: portfolio
+  name: Portfolio
+  time: "2026"
+  section: personal
+  href: https://github.com/techpixel/portfolio
+
+- id: homebridge-repl
+  name: Homebridge-Repl
+  time: "2022"
+  section: older
+  href: https://github.com/techpixel/homebridge-repl
+
+- id: replcraft-jarci
+  name: Replcraft JARCI
+  time: "2022"
+  section: older
+  href: https://github.com/techpixel/replcraft-jarci
+
+- id: zala
+  name: Zala
+  time: "2020"
+  section: older
+  href: https://github.com/techpixel/Zala

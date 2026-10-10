@@ -1,0 +1,77 @@
+---
+/**
+ * Renders <title>, standard meta, OpenGraph and Twitter card tags.
+ * Site-wide defaults live in src/data/seo.json; any prop here overrides
+ * the matching default for the current page.
+ */
+import seo from '../data/seo.json';
+
+export interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+	imageAlt?: string;
+	type?: 'website' | 'article' | 'profile';
+	canonical?: string;
+	noindex?: boolean;
+	/** Set true to render the page title without the site-name template. */
+	bareTitle?: boolean;
+}
+
+const {
+	title,
+	description = seo.description,
+	image = seo.image,
+	imageAlt = seo.imageAlt,
+	type = seo.type,
+	canonical,
+	noindex = false,
+	bareTitle = false,
+} = Astro.props;
+
+const pageTitle = title
+	? bareTitle
+		? title
+		: seo.titleTemplate.replace('%s', title)
+	: seo.title;
+
+// Astro.site comes from astro.config.mjs (which reads seo.json), so URLs
+// resolve absolute even when the page is rendered at build time.
+const base = Astro.site ?? new URL(seo.url);
+const canonicalUrl = canonical ? new URL(canonical, base).href : new URL(Astro.url.pathname, base).href;
+const imageUrl = new URL(image, base).href;
+
+const twitterSite = seo.twitter.site?.trim();
+const twitterCreator = seo.twitter.creator?.trim();
+---
+
+<title>{pageTitle}</title>
+<meta name="description" content={description} />
+{seo.author && <meta name="author" content={seo.author} />}
+{seo.keywords?.length > 0 && <meta name="keywords" content={seo.keywords.join(', ')} />}
+<meta name="theme-color" content={seo.themeColor} />
+<link rel="canonical" href={canonicalUrl} />
+<!-- Favicons from techpixel/portfolio. -->
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+<!-- OpenGraph -->
+<meta property="og:site_name" content={seo.siteName} />
+<meta property="og:type" content={type} />
+<meta property="og:locale" content={seo.locale} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:alt" content={imageAlt} />
+
+<!-- Twitter -->
+<meta name="twitter:card" content={seo.twitter.card} />
+{twitterSite && <meta name="twitter:site" content={twitterSite} />}
+{twitterCreator && <meta name="twitter:creator" content={twitterCreator} />}
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+<meta name="twitter:image:alt" content={imageAlt} />

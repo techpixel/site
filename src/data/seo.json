@@ -1,0 +1,24 @@
+{
+  "siteName": "manitej.com",
+  "url": "https://manitej.com",
+  "title": "you're on manitej.com",
+  "titleTemplate": "%s · manitej.com",
+  "description": "hey! i'm manitej! a programmer and designer studying computer science at purdue, previously building programs at Hack Club.",
+  "image": "/banner.png",
+  "imageAlt": "manitej.com",
+  "type": "website",
+  "locale": "en_US",
+  "author": "Manitej Boorgu",
+  "keywords": [
+    "manitej",
+    "design",
+    "programmer",
+    "hack club"
+  ],
+  "themeColor": "#2f3039",
+  "twitter": {
+    "card": "summary_large_image",
+    "site": "",
+    "creator": ""
+  }
+}

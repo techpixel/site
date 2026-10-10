@@ -1,0 +1,18 @@
+---
+/**
+ * The "hackclub.com ↗" popover (Figma node 2433:319): where a link goes, outlined in
+ * the nearest accent (the entry's, else the section's, else cream). Put it inside the
+ * link, which needs the `has-hint` class. It trails the pointer while the link is
+ * hovered (src/scripts/link-hints.ts); on keyboard focus it sits just right of the link.
+ * Styles are in global.css.
+ */
+interface Props {
+	href: string;
+}
+
+const { href } = Astro.props;
+const url = new URL(href);
+const label = (url.hostname.replace(/^www\./, '') + url.pathname).replace(/\/$/, '');
+---
+
+<span class="link-hint" aria-hidden="true">{label} ↗</span>

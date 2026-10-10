@@ -1,0 +1,226 @@
+---
+import badgeStroke from '../assets/figma/badge-stroke.svg?url';
+import badgeNew from '../assets/figma/badge-new.svg?url';
+import arrowLeft from '../assets/figma/arrow-left.svg?url';
+import arrowRight from '../assets/figma/arrow-right.svg?url';
+import purdueHackersIcon from '../assets/figma/icon-purdue-hackers.svg?url';
+
+interface Props {
+	current?: string;
+}
+
+const { current = 'home' } = Astro.props;
+// Hover sweeps a faint cream fill in from the left; the current page's item is solid
+// cream with dark bold text. Clicking an item turns its hover fill solid on the spot
+// (colour and weight easing over), so the page change has nothing left to animate.
+const navLink =
+	'nav-link relative isolate block h-[30px] w-[153px] px-[2px] text-2xl leading-[30px] text-cream transition-[color,font-weight] duration-250 not-aria-[current=page]:hover:text-accent aria-[current=page]:font-bold aria-[current=page]:text-(--sidebar-ink)';
+---
+
+<!-- Kept across page changes by the client router. So nothing page-specific may live on
+     it: the current nav item is re-marked by the script below, and the dark that sits on
+     cream here (current item, badge, message button) is --sidebar-ink, inherited from the
+     page (global.css defaults it to the page ink; /work sets black). -->
+<aside
+	transition:persist="sidebar"
+	class="sidebar order-last mt-auto flex w-full flex-col items-start gap-2 pt-[77px] md:sticky md:top-6 md:order-none md:mt-0 md:h-[calc(100vh-48px)] md:min-h-[640px] md:w-[153px] md:shrink-0 md:overflow-clip md:pt-0"
+>
+	<nav class="flex w-full flex-col pb-1" aria-label="Primary">
+		<a href="/" aria-current={current === 'home' ? 'page' : undefined} class={navLink}>home</a>
+		<a href="/work" aria-current={current === 'work' ? 'page' : undefined} class={navLink}>work</a>
+		<a href="https://letterbird.co/manitej" target="_blank" rel="noopener" class={navLink}>contact</a>
+	</nav>
+
+	<!-- Diagonal stripe panel: 4px cream border, cream stripes on a 43.5px tile
+	     (same geometry as the Figma pattern) that slide slowly and loop seamlessly. -->
+	<div class="stripes hidden min-h-px w-full flex-1 border-4 border-cream md:block" aria-hidden="true">
+		<div class="stripes-fill size-full bg-cream"></div>
+	</div>
+
+	<div class="relative hidden h-[111px] w-full shrink-0 overflow-clip bg-cream md:block">
+		<!-- The badge's starburst, drawn through a mask so it takes --sidebar-ink. -->
+		<span
+			class="badge absolute left-[4px] top-[5px] block h-[35px] w-[63px] bg-(--sidebar-ink)"
+			style={`--badge: url("${badgeStroke}")`}
+			aria-hidden="true"
+		></span>
+		<img
+			src={badgeNew}
+			width="27.7219"
+			height="13.6139"
+			alt="New"
+			class="absolute left-[20px] top-[16px]"
+		/>
+		<p class="absolute left-[6px] top-[45px] whitespace-nowrap text-base text-black">
+			want to get in touch?
+		</p>
+		<a
+			href="https://letterbird.co/manitej"
+			target="_blank"
+			rel="noopener"
+			class="absolute left-[6px] top-[67px] flex h-[22px] w-[140px] items-center justify-center bg-(--sidebar-ink) p-2 text-base whitespace-nowrap text-accent underline decoration-from-font hover:text-cream"
+		>
+			send me a message
+		</a>
+	</div>
+
+	<!-- Purdue Hackers webring: previous member / ring home / next member. -->
+	<nav class="hidden w-[153px] items-center justify-between p-[2px] md:mt-auto md:flex" aria-label="Purdue Hackers webring">
+		<a href="https://ring.purduehackers.com/previous" class="block size-6 hover:opacity-70" aria-label="Previous site in the Purdue Hackers webring">
+			<img src={arrowLeft} width="24" height="24" alt="" class="block size-full" />
+		</a>
+		<a href="https://ring.purduehackers.com/" class="block size-5 hover:opacity-70" aria-label="Purdue Hackers webring">
+			<img src={purdueHackersIcon} width="20" height="20" alt="" class="block size-full" />
+		</a>
+		<a href="https://ring.purduehackers.com/next" class="block size-6 hover:opacity-70" aria-label="Next site in the Purdue Hackers webring">
+			<img src={arrowRight} width="24" height="24" alt="" class="block size-full" />
+		</a>
+	</nav>
+</aside>
+
+<style>
+	/* Its own layer in page transitions, so it holds still while the page cross-fades.
+	   Show only the live sidebar there (no snapshot cross-fade), so the nav highlight's
+	   sweep plays through the change. */
+	.sidebar {
+		view-transition-name: sidebar;
+	}
+	:global(::view-transition-old(sidebar)) {
+		display: none;
+	}
+	:global(::view-transition-new(sidebar)) {
+		animation: none;
+	}
+
+	/* The fill sweeps in from the left as it fades in: faint cream on hover, solid cream
+	   for the current page. A clicked item is already filled, so it only turns solid. */
+	.nav-link::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: color-mix(in srgb, var(--color-cream) 10%, transparent);
+		opacity: 0;
+		/* `scale` rather than transform: scaleX(), so a zero width still blends smoothly. */
+		scale: 0 1;
+		transform-origin: left;
+		transition:
+			scale 250ms ease,
+			opacity 250ms ease,
+			background-color 250ms ease;
+	}
+	.nav-link:hover::before,
+	.nav-link[aria-current='page']::before {
+		opacity: 1;
+		scale: 1;
+	}
+	.nav-link[aria-current='page']::before {
+		background: var(--color-cream);
+	}
+
+	.badge {
+		mask-image: var(--badge);
+		mask-size: 100% 100%;
+		mask-repeat: no-repeat;
+	}
+
+	.stripes-fill {
+		/* Two 45° bands per 43.5px tile, matching the Figma pattern's 16px
+		   stroke: cream where (x + y) mod 43.5 falls in [0, 22.63]. */
+		mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='43.5' height='43.5' viewBox='0 0 43.5 43.5'%3E%3Cpath d='M0 0H22.63L0 22.63Z M43.5 0V22.63L22.63 43.5H0Z'/%3E%3C/svg%3E");
+		mask-size: 43.5px 43.5px;
+		mask-repeat: repeat;
+		mask-position: 0 0;
+		animation: stripes-slide 10s linear infinite;
+	}
+
+	/* One full tile period per loop, so the wrap is invisible. */
+	@keyframes stripes-slide {
+		to {
+			mask-position: 43.5px 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.stripes-fill {
+			animation: none;
+		}
+	}
+</style>
+
+<script>
+	// The sidebar persists across client-side navigations, so re-mark the current page's
+	// nav item as soon as each new page swaps in.
+	const navLinks = () => document.querySelectorAll<HTMLAnchorElement>('.sidebar nav[aria-label="Primary"] a');
+	const setCurrent = (current: HTMLAnchorElement | undefined) => {
+		for (const link of navLinks()) {
+			if (link === current) link.setAttribute('aria-current', 'page');
+			else link.removeAttribute('aria-current');
+		}
+	};
+
+	// Select the clicked item right away, while its hover fill is still showing, so it
+	// just turns solid (the router may move the sidebar before the pointer's hover state
+	// is re-read, which would otherwise make the fill sweep in a second time).
+	document.addEventListener('click', (e) => {
+		const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('.sidebar nav[aria-label="Primary"] a');
+		if (!link || link.target || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+		if (link.origin === location.origin) setCurrent(link);
+	});
+
+	function markCurrent() {
+		setCurrent([...navLinks()].find((link) => link.origin === location.origin && link.pathname === location.pathname));
+	}
+
+	// The router moves the sidebar into the new page, which cuts off any fill, colour or
+	// weight transition mid-way. So note where each item was just before the swap, and
+	// after it ease the rest of the way from there.
+	type Look = { color: string; weight: string; fill: Record<string, string> };
+	const fillProps = ['scale', 'opacity', 'backgroundColor'] as const;
+	const lookOf = (link: HTMLElement): Look => {
+		const fill = getComputedStyle(link, '::before');
+		return {
+			color: getComputedStyle(link).color,
+			weight: getComputedStyle(link).fontWeight,
+			fill: Object.fromEntries(fillProps.map((p) => [p, fill[p]])),
+		};
+	};
+	let before = new Map<string, Look>();
+	document.addEventListener('astro:before-swap', () => {
+		before = new Map([...navLinks()].map((link) => [link.href, lookOf(link)]));
+	});
+	function easeFromBefore() {
+		const timing = { duration: 200, easing: 'ease-out' };
+		for (const link of navLinks()) {
+			const from = before.get(link.href);
+			if (!from) continue;
+			const now = lookOf(link);
+			if (from.color !== now.color || from.weight !== now.weight) {
+				link.animate([{ color: from.color, fontWeight: from.weight }, {}], timing);
+			}
+			if (fillProps.some((p) => from.fill[p] !== now.fill[p])) {
+				link.animate([{ ...from.fill }, {}], { ...timing, pseudoElement: '::before' });
+			}
+		}
+		before.clear();
+	}
+
+	// Moving the sidebar also restarts its stripe loop, so pin the loop to the page's
+	// clock (which keeps running across client-side navigations): it carries on unbroken.
+	function syncStripes() {
+		for (const anim of document.querySelector('.stripes-fill')?.getAnimations() ?? []) {
+			const period = Number(anim.effect?.getTiming().duration) || 0;
+			if (period) anim.currentTime = performance.now() % period;
+		}
+	}
+
+	document.addEventListener('astro:after-swap', () => {
+		markCurrent();
+		easeFromBefore();
+		syncStripes();
+	});
+	document.addEventListener('astro:page-load', () => {
+		markCurrent();
+		syncStripes();
+	});
+</script>

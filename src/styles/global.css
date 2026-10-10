@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/* Design tokens from the Figma "manitej.com 26" frame. */
+@theme {
+	--color-ink: #2f3039;
+	--color-ink-light: #36363e;
+	--color-cream: #ffeedc;
+	--color-accent: #f8d2aa;
+
+	--font-body: "Familjen Grotesk", sans-serif;
+
+	/* Figma text uses the font's natural leading; Tailwind's text-* utilities
+	   would otherwise pin line-height to 1.5. */
+	--text-xs--line-height: normal;
+	--text-sm--line-height: normal;
+	--text-base--line-height: normal;
+	--text-lg--line-height: normal;
+	--text-xl--line-height: normal;
+	--text-2xl--line-height: normal;
+	--text-3xl--line-height: normal;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	min-height: 100vh;
+	background: var(--color-ink);
+	color: var(--color-cream);
+	font-family: var(--font-body);
+	/* The dark that sits on cream in the sidebar; /work overrides it with black. */
+	--sidebar-ink: var(--color-ink);
+	/* Figma text uses the font's natural leading, not Tailwind's 1.5 default. */
+	line-height: normal;
+	/* No rubber-band bounce or scroll chaining past the page's edges. */
+	overscroll-behavior: none;
+}
+
+/* Fade the page in on a fresh load. Pages swapped in by the client router already
+   cross-fade, so Layout.astro tags them .page-transition to skip this. */
+body {
+	animation: page-in 400ms ease both;
+}
+.page-transition body {
+	animation: none;
+}
+@keyframes page-in {
+	from {
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	body {
+		animation: none;
+	}
+}
+
+/* 7×7 checkerboard (100px cells at 700px, ~27px at 190px); cells where
+   (col + row) is odd are lighter. */
+.checkerboard {
+	background-image: repeating-conic-gradient(var(--color-ink-light) 0 25%, transparent 0 50%);
+	background-size: calc(200% / 7) calc(200% / 7);
+}
+
+/* Link hints (src/components/LinkHint.astro). */
+.has-hint {
+	position: relative;
+}
+.link-hint {
+	position: absolute;
+	top: 50%;
+	left: calc(100% + 6px);
+	z-index: 30;
+	/* Figma's 1px stroke sits inside the 4px × 2px padding, hence 3px × 1px here. */
+	padding: 1px 3px;
+	border: 1px solid var(--hint-color);
+	background: #000;
+	color: var(--hint-color);
+	font-size: 12px;
+	line-height: 15px;
+	font-weight: 400;
+	font-style: normal;
+	white-space: nowrap;
+	text-decoration: none;
+	pointer-events: none;
+	opacity: 0;
+	transform: translateY(-50%);
+	transition: opacity 200ms ease;
+	--hint-color: var(--accent, var(--org-accent, var(--color-cream)));
+}
+.link-hint.following {
+	position: fixed;
+	top: 0;
+	left: 0;
+	transform: translate(calc(var(--x) + 10px), calc(var(--y) + 10px));
+}
+.has-hint:hover > .link-hint,
+.has-hint:focus-visible > .link-hint {
+	opacity: 1;
+}

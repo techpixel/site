@@ -1,0 +1,38 @@
+---
+import nameWarp from '../../assets/overlays/portfolio/name-warp.svg?url';
+import sillyBig from '../../assets/overlays/portfolio/silly-big.svg?url';
+import sillySmall from '../../assets/overlays/portfolio/silly-small.svg?url';
+import face from '../../assets/overlays/portfolio/face.svg?url';
+
+/**
+ * Hover overlay for the portfolio card (Figma node 2416:1561): the portfolio
+ * landing's outlined name and two smiling "sillies" over a dot grid. The smiley is
+ * techpixel/portfolio's face.svg, the vector the design was drawn with.
+ */
+---
+
+<div class="relative h-[888px] w-[488px] text-cream">
+	<div class="art absolute inset-0">
+	<div class="absolute top-[48px] left-[39px] h-[611px] w-[411px] overflow-clip border border-cream bg-black">
+		<div class="dots absolute top-[122px] left-[-1px] h-[518px] w-[411px]" aria-hidden="true"></div>
+	</div>
+	<img src={nameWarp} width="430.026" height="74" alt="Manitej Boorgu" class="absolute top-[60px] left-[29px] block max-w-none" />
+
+	<img src={sillyBig} width="458" height="436.112" alt="" class="absolute top-[133px] left-[30px] block max-w-none" />
+	<img src={face} alt="" class="absolute top-[274.1px] left-[247.8px] block h-[94.05px] w-[89.4px] rotate-[17.7deg] object-contain" />
+
+	<div class="absolute top-[363px] left-0 flex h-[269.39px] w-[257.61px] items-center justify-center">
+		<img src={sillySmall} width="258.513" height="246.159" alt="" class="block max-w-none shrink-0 rotate-[92.59deg]" />
+	</div>
+	<img src={face} alt="" class="absolute top-[449.9px] left-[96.7px] block h-[52.84px] w-[49px] -scale-x-100 rotate-[-7.49deg] object-contain" />
+	</div>
+</div>
+
+<style>
+	/* 4px square dots on a 27.4px pitch, as in the Figma pattern fill. */
+	.dots {
+		background-image: conic-gradient(from 270deg at 4px 4px, var(--color-cream) 90deg, transparent 0);
+		background-size: 27.4px 27.4px;
+		background-position: 4px 1px;
+	}
+</style>
