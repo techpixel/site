@@ -4,6 +4,7 @@
 	"buildCommand": "astro build",
 	"outputDirectory": "dist",
 	"trailingSlash": false,
+	"redirects": [{ "source": "/projects", "destination": "/work", "permanent": false }],
 	"headers": [
 		{
 			"source": "/_astro/(.*)",

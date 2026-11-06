@@ -26,7 +26,7 @@ const projects = (await getCollection('projects'))
 	.filter((p) => p.data.cover && p.data.cover in covers);
 ---
 
-<Layout title="work" description="Programs, events and products Manitej has designed and built.">
+<Layout title="work" description="stuff i've done">
 	<main class="work relative min-h-screen bg-black">
 		<!-- Desktop holds the project back until its images have loaded (the script below
 		     shows it). Set here, before the first paint, so it never shows half-loaded; a
@@ -55,7 +55,7 @@ const projects = (await getCollection('projects'))
 			     a bold ink copy of the names clipped to it on top. -->
 			<nav
 				class="picker hidden w-[115px] shrink-0 flex-col gap-2 md:sticky md:top-6 md:flex md:h-[calc(100vh-48px)] md:min-h-[640px]"
-				aria-label="Projects"
+				aria-label="Work"
 			>
 				<div class="picker-names relative flex flex-col pb-[3px]">
 					<div class="picker-mark absolute inset-x-0 top-0 h-[23px] bg-cream" aria-hidden="true"></div>
