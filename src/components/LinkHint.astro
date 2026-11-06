@@ -4,15 +4,17 @@
  * the nearest accent (the entry's, else the section's, else cream). Put it inside the
  * link, which needs the `has-hint` class. It trails the pointer while the link is
  * hovered (src/scripts/link-hints.ts); on keyboard focus it sits just right of the link.
- * Styles are in global.css.
+ * Styles are in global.css. The `plain` one (Figma 2539:2832, on /work) is just the
+ * address in italics, in the page's black and white with no accent and no arrow.
  */
 interface Props {
 	href: string;
+	plain?: boolean;
 }
 
-const { href } = Astro.props;
+const { href, plain = false } = Astro.props;
 const url = new URL(href);
 const label = (url.hostname.replace(/^www\./, '') + url.pathname).replace(/\/$/, '');
 ---
 
-<span class="link-hint" aria-hidden="true">{label} ↗</span>
+<span class:list={['link-hint', { plain }]} aria-hidden="true">{plain ? label : `${label} ↗`}</span>

@@ -10,19 +10,15 @@ import site from '../data/site.json';
 import headline from '../assets/headline-flat.svg?raw';
 // Full-tone portrait from techpixel/portfolio; Portrait.svelte dithers it on the client.
 import portrait from '../assets/portrait.webp';
+// The beach behind the desktop page (Figma node 2495:660), dithered on the client like the portrait.
+import beach from '../assets/beach.webp';
 import songArt from '../assets/figma/song-art.png';
-import iconLinkedin from '../assets/figma/icon-linkedin.svg?url';
-import iconGithub from '../assets/figma/icon-github.svg?url';
-import iconInstagram from '../assets/figma/icon-instagram.svg?url';
+import arrowLeft from '../assets/figma/arrow-left.svg?url';
+import arrowRight from '../assets/figma/arrow-right.svg?url';
+import purdueHackersIcon from '../assets/figma/icon-purdue-hackers.svg?url';
 import logoMidnight from '../assets/figma/logo-midnight.svg?url';
 import logoHorizons from '../assets/figma/logo-horizons.svg?url';
 import logoArcade from '../assets/figma/logo-arcade.svg?url';
-
-const socialIcons: Record<string, string> = {
-	linkedin: iconLinkedin,
-	github: iconGithub,
-	instagram: iconInstagram,
-};
 
 // Logo boxes are 28×28; Midnight's mark is 28×21.3 and sits centered.
 const projectLogos: Record<string, { src: string; width: number; height: number }> = {
@@ -34,12 +30,21 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 
 <Layout>
 	<main id="home" class="relative min-h-screen overflow-clip">
-		<!-- Checkerboard, bottom-right -->
-		<div class="checkerboard pointer-events-none absolute right-0 bottom-0 size-[190px] md:size-[700px]" aria-hidden="true"></div>
+		<!-- Checkerboard, bottom-right (phones; desktop has the beach instead) -->
+		<div class="checkerboard pointer-events-none absolute right-0 bottom-0 size-[190px] md:hidden" aria-hidden="true"></div>
 
-		<!-- Headline (desktop): flat SVG, waved live by Warp, centered in the 106px band top-right. -->
+		<!-- Beach (desktop): the photo dithered into cells of --color-cream at half strength, filling the
+		     right of the page under the headline's band. Sized in vw like the headline. Its
+		     cells sweep in from the right, in step with the headline. -->
+		<div class="accent-box pointer-events-none absolute right-0 bottom-0 hidden opacity-50 md:block" aria-hidden="true">
+			<Portrait client:load src={beach.src} width={beach.width} height={beach.height} cell={2} ink="--color-cream" reveal={1200} alt="" />
+		</div>
+
+		<!-- Headline (desktop): flat SVG, waved live by Warp, top-right. It slides in from the
+		     right along the wave. Placed and sized in vw so it, and the wave with it, scale
+		     with the window. -->
 		<div
-			class="pointer-events-none absolute top-[33px] right-0 hidden aspect-[4362/203] w-[855px] max-w-[62vw] text-[#f4f1e4] md:block"
+			class="headline-box pointer-events-none absolute right-0 hidden aspect-[4362/203] text-cream md:block"
 			aria-label="You're on manitej dot com"
 			role="img"
 		>
@@ -48,13 +53,14 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 				svg={headline}
 				mode="wave"
 				fit="natural"
-				class="headline size-full opacity-0 transition-opacity duration-700 ease-out [&.warp-ready]:opacity-100 [&_path]:fill-current"
+				class="headline invisible size-full [&.warp-ready]:visible [&_path]:fill-current"
 				complexity={8}
 				interpolation={40}
 				buffer={30}
 				amplitude={170}
-				speed={0.6}
+				speed={0}
 				period={900}
+				slideIn={1200}
 			/>
 		</div>
 
@@ -64,7 +70,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 			aria-hidden="true"
 		>
 			<div
-				class="absolute top-1/2 left-1/2 aspect-[4362/203] w-[100cqh] -translate-x-1/2 -translate-y-1/2 rotate-90 text-[#393a42]"
+				class="absolute top-1/2 left-1/2 aspect-[4362/203] w-[100cqh] -translate-x-1/2 -translate-y-1/2 rotate-90 text-(--color-misc-ghost)"
 			>
 				<Warp
 					client:only="svelte"
@@ -76,7 +82,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 					interpolation={40}
 					buffer={30}
 					amplitude={170}
-					speed={0.6}
+					speed={0}
 					period={900}
 				/>
 			</div>
@@ -85,7 +91,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 		<div class="relative z-10 flex min-h-screen flex-col px-6 pt-[34px] pb-[30px] md:min-h-0 md:flex-row md:items-start md:gap-[26px] md:p-6">
 			<Sidebar current="home" />
 
-			<div class="flex w-full max-w-[486px] flex-col gap-[50px] md:gap-5">
+			<div class="bio-column flex w-full max-w-[486px] flex-col gap-[50px] md:gap-5">
 				<!-- Photo + bio -->
 				<section class="flex flex-col items-start gap-4 md:gap-3">
 					<div class="relative isolate size-[171px] shrink-0 md:size-[300px]">
@@ -97,13 +103,13 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 							cell={2}
 							alt="Manitej smiling in front of a wall of framed photos"
 						/>
-						<div class="absolute inset-0 bg-cream mix-blend-multiply" aria-hidden="true"></div>
+						<div class="absolute inset-0 bg-(--color-portrait-tint) mix-blend-multiply" aria-hidden="true"></div>
 					</div>
 
 					<div class="w-[290px] text-xs text-cream md:w-full md:text-base [&>p+p]:mt-[1lh]">
 						<p>
 							<strong class="font-bold">Hey!</strong> My name is Manitej!{' '}
-							<span class="text-accent">(man-uh-tehj)</span>
+							<span class="text-link">(man-uh-tehj)</span>
 						</p>
 						<p>
 							I’m a programmer and designer currently studying Computer Science at Purdue
@@ -115,7 +121,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 								href="https://hackclub.com"
 								target="_blank"
 								rel="noopener"
-								class="underline decoration-from-font hover:text-accent">Hack Club</a
+								class="underline decoration-from-font hover:text-link">Hack Club</a
 							>{' '}
 							building programs and running events for technical teenagers and helping them become
 							great builders and doers.
@@ -124,7 +130,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 							You can reach me at{' '}
 							<a
 								href="#"
-								class="underline decoration-from-font hover:text-accent"
+								class="underline decoration-from-font hover:text-link"
 								data-email-user="me"
 								data-email-domain="manitej.com"
 								data-email-action="copy"
@@ -135,30 +141,22 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 						</p>
 					</div>
 
-					<ul class="flex items-center gap-[10px] pt-1">
-						{
-							site.socials
-								.filter((s) => s.href)
-								.map((s) => (
-								<li>
-									<a
-										href={s.href}
-										target={s.href.startsWith('http') ? '_blank' : undefined}
-										rel="noopener"
-										aria-label={s.label}
-										class="block size-5 hover:opacity-70"
-									>
-										<img src={socialIcons[s.id]} width="20" height="20" alt="" class="block size-full" />
-									</a>
-								</li>
-							))
-						}
-					</ul>
+					<!-- Purdue Hackers webring: previous member / ring home / next member. -->
+					<nav class="hidden w-[153px] items-center justify-between p-[2px] text-cream md:flex" aria-label="Purdue Hackers webring">
+						<a href="https://ring.purduehackers.com/previous" class="block size-6 hover:opacity-70" aria-label="Previous site in the Purdue Hackers webring">
+							<span class="icon size-full" style={`--icon: url("${arrowLeft}")`}></span>
+						</a>
+						<a href="https://ring.purduehackers.com/" class="block size-5 hover:opacity-70" aria-label="Purdue Hackers webring">
+							<span class="icon size-full" style={`--icon: url("${purdueHackersIcon}")`}></span>
+						</a>
+						<a href="https://ring.purduehackers.com/next" class="block size-6 hover:opacity-70" aria-label="Next site in the Purdue Hackers webring">
+							<span class="icon size-full" style={`--icon: url("${arrowRight}")`}></span>
+						</a>
+					</nav>
 				</section>
 
-				<!-- Song + projects -->
-				<!-- Hidden on desktop viewports too short to fit it without scrolling (see the fold style below). -->
-				<section id="work" class="fold flex flex-wrap items-start gap-x-12 gap-y-6">
+				<!-- Song + projects: phones only; the desktop design dropped them. -->
+				<section id="work" class="flex md:hidden flex-wrap items-start gap-x-12 gap-y-6">
 					<div class="flex flex-col items-start gap-[6px]">
 						<h2 class="text-sm font-bold whitespace-nowrap text-cream md:text-base">{site.song.label}</h2>
 						<div class="relative isolate size-[100px]">
@@ -175,7 +173,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 						</div>
 						<p class="text-xs whitespace-nowrap text-cream">
 							{site.song.title}<br />
-							<span class="text-accent">{site.song.artist}</span>
+							<span class="text-link">{site.song.artist}</span>
 						</p>
 					</div>
 
@@ -191,7 +189,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 												href={p.href}
 												target="_blank"
 												rel="noopener"
-												class="flex items-center gap-2 text-sm whitespace-nowrap text-cream hover:text-accent md:text-base"
+												class="flex items-center gap-2 text-sm whitespace-nowrap text-cream hover:text-link md:text-base"
 											>
 												<span class="flex size-7 shrink-0 items-center justify-center">
 													<img
@@ -211,7 +209,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 						</ul>
 						<a
 							href="/work"
-							class="pt-1 text-xs leading-none text-accent underline decoration-from-font hover:text-cream"
+							class="pt-1 text-xs leading-none text-link underline decoration-from-font hover:text-link-hover"
 						>
 							view more projects
 						</a>
@@ -270,16 +268,30 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 </script>
 
 <style>
-	/* The song/projects row needs the page to be about 820px tall on desktop; below that it goes. */
-	@media (min-width: 768px) and (max-height: 819px) {
-		.fold {
-			display: none;
+	/* Figma's 665px wide at 1440, centred in the 82px band along the top, all kept as
+	   fractions of the viewport so the whole headline, wave included, scales about the
+	   top-right corner. The beach fills the same width from under the band down. */
+	.headline-box {
+		width: 46.181vw;
+		top: 1.771vw;
+	}
+	/* Rounded to whole pixels: a box edge partway through a pixel blends the canvas's edge
+	   cells into the page, a soft band down the left side. */
+	.accent-box {
+		width: round(46.181vw, 1px);
+		top: round(5.694vw, 1px);
+	}
+	/* Stop the bio 24px short of the beach's left edge (100vw − 46.181vw), past the
+	   24px page padding, 153px sidebar and 26px gap. */
+	@media (min-width: 980px) {
+		.bio-column {
+			max-width: min(486px, calc(53.819vw - 227px));
 		}
 	}
 
 	:global(.copied-note) {
 		font-style: italic;
-		color: var(--color-accent);
+		color: var(--color-link);
 		opacity: 0;
 		transition: opacity 200ms ease;
 	}

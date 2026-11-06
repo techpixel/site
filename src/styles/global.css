@@ -2,10 +2,27 @@
 
 /* Design tokens from the Figma "manitej.com 26" frame. */
 @theme {
+	/* The desktop layout starts where the home page's 300px portrait clears the beach
+	   (24 + 153 + 26 + 300 + 24px ≤ 53.819vw). Narrower, every page takes the phone
+	   layout, since the sidebar switches with it. Raw media queries and matchMedia calls
+	   repeat this value. */
+	--breakpoint-md: 980px;
+
+	/* The palette (Figma 2530:1690), mirrored by the Figma "Color" variables. Tailwind's
+	   own colours are cleared so these are the only ones. */
+	--color-*: initial;
 	--color-ink: #2f3039;
-	--color-ink-light: #36363e;
 	--color-cream: #ffeedc;
-	--color-accent: #f8d2aa;
+	--color-link: #f8d2aa;
+	--color-link-hover: #f9c289;
+	--color-black: #000;
+	--color-white: #fff;
+
+	/* Theme-dependent colours that aren't a swap of the ones above (see light mode below). */
+	--color-portrait-tint: #ffeedc;
+	/* Near-inks outside the palette: the checkerboard and the ghosted headline. */
+	--color-misc-ink-light: #36363e;
+	--color-misc-ghost: #393a42;
 
 	--font-body: "Familjen Grotesk", sans-serif;
 
@@ -18,6 +35,23 @@
 	--text-xl--line-height: normal;
 	--text-2xl--line-height: normal;
 	--text-3xl--line-height: normal;
+}
+
+/* Light mode (Figma node 2475:760), set by the sidebar's sun button as data-theme on
+   <html>. The page is the dark design turned inside out, so the colours trade places:
+   ink is the cream page, cream is the ink type and fills, and black and white (black
+   type on cream, white titles, /work's black page) follow them. */
+:root[data-theme='light'] {
+	--color-ink: #ffeedc;
+	--color-cream: #2f3039;
+	--color-link: #474b68;
+	--color-link-hover: #41487a;
+	--color-black: #ffeedc;
+	--color-white: #2f3039;
+	--color-portrait-tint: #e8e8ec;
+	--color-misc-ink-light: #f6e2cc;
+	--color-misc-ghost: #f3dfc9;
+	color-scheme: light;
 }
 
 html,
@@ -45,6 +79,17 @@ body {
 .page-transition body {
 	animation: none;
 }
+/* A slow page change (Layout.astro) fades the page out around the sidebar. */
+.leaving :is(main, main :has(.sidebar)) > :not(.sidebar, :has(.sidebar)) {
+	opacity: 0;
+	transition: opacity 150ms ease;
+}
+/* Keep the client-side page cross-fade short so navigation feels immediate. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 120ms;
+}
+
 @keyframes page-in {
 	from {
 		opacity: 0;
@@ -56,10 +101,18 @@ body {
 	}
 }
 
+/* A one-colour SVG icon drawn in the current text colour, so it follows the theme:
+   <span class="icon" style="--icon: url(…)">. */
+.icon {
+	display: block;
+	background-color: currentColor;
+	mask: var(--icon) center / 100% 100% no-repeat;
+}
+
 /* 7×7 checkerboard (100px cells at 700px, ~27px at 190px); cells where
    (col + row) is odd are lighter. */
 .checkerboard {
-	background-image: repeating-conic-gradient(var(--color-ink-light) 0 25%, transparent 0 50%);
+	background-image: repeating-conic-gradient(var(--color-misc-ink-light) 0 25%, transparent 0 50%);
 	background-size: calc(200% / 7) calc(200% / 7);
 }
 
@@ -89,6 +142,11 @@ body {
 	transition: opacity 200ms ease;
 	--hint-color: var(--accent, var(--org-accent, var(--color-cream)));
 }
+.link-hint.plain {
+	--hint-color: var(--color-link-hover);
+	background: var(--color-black);
+	font-style: italic;
+}
 .link-hint.following {
 	position: fixed;
 	top: 0;
@@ -98,4 +156,9 @@ body {
 .has-hint:hover > .link-hint,
 .has-hint:focus-visible > .link-hint {
 	opacity: 1;
+}
+/* Hidden at once while the page scrolls (src/scripts/link-hints.ts). */
+.scrolling .has-hint > .link-hint {
+	opacity: 0;
+	transition: none;
 }

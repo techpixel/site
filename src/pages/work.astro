@@ -1,302 +1,468 @@
 ---
 import { getCollection } from 'astro:content';
+import type { ImageMetadata } from 'astro';
 import Layout from '../layouts/Layout.astro';
 import Sidebar from '../components/Sidebar.astro';
-import WorkSection from '../components/work/WorkSection.astro';
-import ProjectEntry from '../components/work/ProjectEntry.astro';
-import Mark from '../components/work/Mark.astro';
-import HorizonsOverlay from '../components/overlays/HorizonsOverlay.astro';
-import MidnightOverlay from '../components/overlays/MidnightOverlay.astro';
-import ArcadeOverlay from '../components/overlays/ArcadeOverlay.astro';
-import CampfireOverlay from '../components/overlays/CampfireOverlay.astro';
-import ManifestoOverlay from '../components/overlays/ManifestoOverlay.astro';
-import PurdueHackersOverlay from '../components/overlays/PurdueHackersOverlay.astro';
-import OrchardOverlay from '../components/overlays/OrchardOverlay.astro';
-import HackClubOverlay from '../components/overlays/HackClubOverlay.astro';
+import ProjectCard from '../components/work/ProjectCard.astro';
 
-import hackClubFlag from '../assets/work/hack-club-flag.svg?url';
-import purdueHackers from '../assets/work/purdue-hackers.svg?url';
-import orchardMark from '../assets/work/orchard.svg?url';
-import logoHorizons from '../assets/figma/logo-horizons.svg?url';
-import logoArcade from '../assets/figma/logo-arcade.svg?url';
-import logoMidnight from '../assets/work/logo-midnight.svg?url';
-import logoCampfire from '../assets/work/logo-campfire.png?url';
-import logoManifesto from '../assets/work/logo-manifesto.svg?url';
+// The YAML's `cover` keys resolve to these (src/assets/covers/<key>.webp).
+const covers = Object.fromEntries(
+	Object.entries(import.meta.glob<{ default: ImageMetadata }>('../assets/covers/*.webp', { eager: true })).map(
+		([path, mod]) => [path.split('/').pop()!.replace('.webp', ''), mod.default],
+	),
+);
 
-// Marks the YAML's `logo` keys resolve to (intrinsic sizes; drawn into a 32px box).
-const logos: Record<string, { src: string; width: number; height: number }> = {
-	horizons: { src: logoHorizons, width: 32, height: 32 },
-	arcade: { src: logoArcade, width: 32, height: 32 },
-	midnight: { src: logoMidnight, width: 32, height: 24.37 },
-	campfire: { src: logoCampfire, width: 32, height: 32 },
-	manifesto: { src: logoManifesto, width: 32, height: 32 },
-};
+// Photos from a project, src/assets/photos/<project id>/<n>.webp, in file name order.
+const photos: Record<string, ImageMetadata[]> = {};
+for (const [path, mod] of Object.entries(
+	import.meta.glob<{ default: ImageMetadata }>('../assets/photos/*/*.webp', { eager: true }),
+).sort(([a], [b]) => a.localeCompare(b))) {
+	(photos[path.split('/').at(-2)!] ??= []).push(mod.default);
+}
 
-// Overlays the YAML's `overlay` keys resolve to. Add one per Hack Club project.
-const overlays: Record<string, typeof HorizonsOverlay> = {
-	horizons: HorizonsOverlay,
-	midnight: MidnightOverlay,
-	arcade: ArcadeOverlay,
-	campfire: CampfireOverlay,
-	manifesto: ManifestoOverlay,
-	'hack-club': HackClubOverlay,
-	'purdue-hackers': PurdueHackersOverlay,
-	orchard: OrchardOverlay,
-};
-
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
-const hackClub = projects.filter((p) => p.data.section === 'hack-club');
-const personal = projects.filter((p) => p.data.section === 'personal' && p.data.featured);
-// Everything that shows an overlay while hovered: project entries (from the YAML)
-// plus the sections below, which name their overlay inline. They all show to the
-// right of the column.
-const hoverKeys = [
-	...projects.map((p) => p.data.overlay).filter((k): k is string => !!k && k in overlays),
-	'hack-club',
-	'purdue-hackers',
-	'orchard',
-];
-
-// Hovering a target shows its overlay: one rule per key, since CSS can't match the
-// two attributes against each other. A section is also :hover while one of its
-// entries is, so a second, more specific rule hides the section's own overlay then.
-const overlayCss = hoverKeys
-	.map(
-		(k) =>
-			`@media (hover:hover){` +
-			`.work:has([data-hover="${k}"]:hover) [data-overlay="${k}"]{opacity:1;visibility:visible;transition-delay:0s}` +
-			`.work:has([data-hover="${k}"] [data-hover]:hover) [data-overlay="${k}"]{opacity:0}` +
-			`}`,
-	)
-	.join('\n');
+// Every project with a cover, in the YAML's order.
+const projects = (await getCollection('projects'))
+	.sort((a, b) => a.data.order - b.data.order)
+	.filter((p) => p.data.cover && p.data.cover in covers);
 ---
 
-<Layout title="work" description="Programs, events and products Manitej has designed and built." class="bg-black">
-	<main class="work relative min-h-screen overflow-clip bg-black">
-		<div
-			class="relative z-10 flex min-h-screen flex-col px-6 pt-[34px] pb-[30px] md:min-h-0 md:flex-row md:items-start md:gap-[26px] md:p-6"
-		>
+<Layout title="work" description="Programs, events and products Manitej has designed and built.">
+	<main class="work relative min-h-screen bg-black">
+		<!-- Desktop holds the project back until its images have loaded (the script below
+		     shows it). Set here, before the first paint, so it never shows half-loaded; a
+		     safety timer lets it through if the script never runs. -->
+		<script is:inline>
+			if (matchMedia('(min-width: 980px)').matches) {
+				const main = document.querySelector('main.work');
+				const html = document.documentElement;
+				main.classList.add('loading', 'first');
+				setTimeout(() => main.classList.contains('loading') && html.classList.add('slow'), 400);
+				setTimeout(() => {
+					main.classList.remove('loading', 'first');
+					html.classList.remove('slow');
+				}, 10000);
+			}
+		</script>
+		<div class="relative z-10 flex min-h-screen flex-col px-6 pt-[34px] pb-[30px] md:min-h-0 md:flex-row md:items-start md:gap-6 md:p-6">
 			<Sidebar current="work" />
 
-			<!-- One column that scrolls with the page; hover overlays show beside it. -->
-			<div class="flex w-full max-w-[417px] flex-col gap-6">
-				<WorkSection
-					id="hack-club"
-					title="Hack Club"
-					href="https://hackclub.com"
-					roles={['Engineering Intern (2024)', 'Gap Year Fellow (2025-2026)']}
-					tags={['Product Design', 'UI/UX & Brand Design', 'Engineering']}
-					accent="#ff6a73"
-					overlay="hack-club"
-				>
-					<Mark slot="icon" src={hackClubFlag} width={68} height={24} />
-					<div class="text-base text-accent [&>p+p]:mt-[1lh]">
-						<p>
-							Hack Club is an international non-profit dedicated to supporting teenage builders
-							(“hackers”) in their journey. During my time at Hack Club, I designed and built
-							educational high-agency programs from scratch.
-						</p>
-						<p>
-							Programs I’ve built have a combined spend of $1M, funding 12,000+ teenagers who have
-							spent ~100,000 hours on 6,000+ projects. My work has been highly varied, ranging from UX
-							design and full stack engineering, to product design and management.
-						</p>
-					</div>
-					<ul class="-my-2 flex w-full flex-col items-start">
-						{
-							hackClub.map((p) => (
-								<ProjectEntry
-									id={p.id}
-									name={p.data.name}
-									time={p.data.time}
-									title={p.data.title}
-									links={p.data.links}
-									tags={p.data.tags}
-									logo={p.data.logo ? logos[p.data.logo] : undefined}
-									mark={p.data.mark}
-									color={p.data.color}
-									overlay={p.data.overlay && overlays[p.data.overlay] ? p.data.overlay : undefined}
-								/>
-							))
-						}
-					</ul>
-				</WorkSection>
+			<!-- Figma 2476:1062 (light 2512:1242): the sidebar, then the project picker, then one
+			     project at a time, 24px apart. Phones list every project instead, with no picker. -->
 
-				<WorkSection
-					id="purdue-hackers"
-					title="Purdue Hackers"
-					href="https://purduehackers.com"
-					roles={['Organizer & Designer (2026-)']}
-					tags={['Design']}
-					accent="#fcd202"
-					overlay="purdue-hackers"
-				>
-					<Mark slot="icon" src={purdueHackers} width={24} height={24} />
-					<p class="text-base text-accent">
-						Purdue Hackers is a collective of hobbyists, engineers, and artists who believe that the
-						best way of getting good at anything is by building technical and creative projects.
-					</p>
-				</WorkSection>
-
-				<WorkSection
-					id="orchard"
-					title="Orchard"
-					roles={['Volunteer Designer (2026)']}
-					tags={['Design', 'Branding']}
-					accent="#f9445a"
-					overlay="orchard"
-				>
-					<Mark slot="icon" src={orchardMark} width={24} height={24} />
-					<div class="text-base text-accent [&>p+p]:mt-[1lh]">
-						<p>
-							Orchard is an opinionated and easy to set up self-hosted PaaS using Kubernetes as its
-							underlying orchestration engine. I provided branding and UX design input for Orchard.
-						</p>
-						<p>Orchard is still in development! It will be released <em>eventually</em>.</p>
-					</div>
-				</WorkSection>
-
-				<WorkSection id="personal" title="Personal Projects" accent="#ffeedc">
-					<p class="text-base text-accent">These are just things I work on in my free time.</p>
-					<ul class="-my-2 flex w-full flex-col items-start">
-						{
-							personal.map((p) => (
-								<ProjectEntry id={p.id} name={p.data.name} time={p.data.time} href={p.data.href} />
-							))
-						}
-						<li class="py-2">
+			<!-- Project picker (Figma 2512:1228): the names, then a column of dots down to the
+			     sidebar's foot. The chosen project is marked like the sidebar's current page:
+			     one cream rectangle that slides from name to name with the scroll (--at), with
+			     a bold ink copy of the names clipped to it on top. -->
+			<nav
+				class="picker hidden w-[115px] shrink-0 flex-col gap-2 md:sticky md:top-6 md:flex md:h-[calc(100vh-48px)] md:min-h-[640px]"
+				aria-label="Projects"
+			>
+				<div class="picker-names relative flex flex-col pb-[3px]">
+					<div class="picker-mark absolute inset-x-0 top-0 h-[23px] bg-cream" aria-hidden="true"></div>
+					{
+						projects.map((p, i) => (
 							<a
-								href="/projects"
-								class="text-xs whitespace-nowrap text-cream underline decoration-from-font hover:text-accent"
+								href={`#${p.id}`}
+								aria-current={i === 0 ? 'true' : undefined}
+								class="picker-link relative isolate block h-[23px] w-full text-lg leading-[23px] text-cream transition-[color,font-weight] duration-250 not-aria-[current=true]:hover:text-link"
 							>
-								View More (2020-2026)
+								{p.data.name.toLowerCase()}
 							</a>
-						</li>
-					</ul>
-				</WorkSection>
-
-				<div class="card relative h-[76px] w-full overflow-clip bg-cream">
-					<p class="absolute top-[18px] left-[20px] text-base whitespace-nowrap text-black">
-						looking for my design work?<br />
-						<a
-							href="https://portfolio.manitej.com"
-							target="_blank"
-							rel="noopener"
-							class="underline decoration-from-font hover:text-ink">view my portfolio</a
-						>
-					</p>
+						))
+					}
+					<div class="picker-ink pointer-events-none absolute inset-0 z-10 text-lg leading-[23px] font-bold text-(--sidebar-ink)" aria-hidden="true">
+						{projects.map((p) => <div class="h-[23px]">{p.data.name.toLowerCase()}</div>)}
+					</div>
 				</div>
-			</div>
-		</div>
+				<!-- Stops 7.5px short of the foot, so its last row centres on the sidebar's 24px icons. -->
+				<div class="picker-dots mb-[7.5px] min-h-0 flex-1 bg-cream" aria-hidden="true"></div>
+			</nav>
 
-		<!-- Hover overlays, pinned to the viewport beside the column while the page scrolls.
-		     The stage starts 24px into the 48px gutter right of the column, so the overlays'
-		     own 24px margin keeps that gutter. -->
-		<div
-			class="overlay-stage pointer-events-none fixed top-0 left-[644px] z-20 hidden h-[888px] w-[488px] lg:block"
-			aria-hidden="true"
-		>
-			{
-				hoverKeys.map((key) => {
-					const Overlay = overlays[key];
-					return (
-						<div class="overlay absolute inset-0 opacity-0" data-overlay={key}>
-							<Overlay />
-						</div>
-					);
-				})
-			}
+			<ul class="flex w-full flex-col gap-10 md:w-[640px] md:min-w-0 md:shrink md:gap-12">
+				{
+					projects.map((p, i) => (
+						<ProjectCard
+							id={p.id}
+							class={i === 0 ? 'chosen' : undefined}
+							heading={p.data.heading ?? p.data.name}
+							cover={covers[p.data.cover!]}
+							href={p.data.links.website ?? p.data.href}
+							subtitle={p.data.subtitle}
+							blurb={p.data.blurb}
+							links={p.data.links}
+							photos={photos[p.id]}
+						/>
+					))
+				}
+			</ul>
 		</div>
 	</main>
 </Layout>
 
-<style is:inline set:html={overlayCss}></style>
-
-<style is:global>
-	html,
-	body {
-		background: #000;
-		--sidebar-ink: #000;
-	}
-</style>
-
 <style>
-	/* Section rules and headers take the org accent while one of their entries is hovered. */
-	.work :global(.section-rule),
-	.work :global(.section-head) {
-		color: var(--head, var(--color-cream));
-		transition: color 200ms ease;
-	}
-	.work :global(.entry) {
-		transition:
-			opacity 200ms ease,
-			color 200ms ease;
-	}
-	/* Plain arrow over text too (links keep their pointer): the page is for hovering,
-	   and the text-selection I-beam flickers in and out as the pointer crosses it. */
-	.work {
-		cursor: default;
-	}
-	.work :global(.section),
-	.card {
-		transition: opacity 200ms ease;
+	/* Desktop shows one project a screen. A scroll moves one project up or down (the
+	   script slides the page there), and the page always comes to rest with one in place,
+	   24px from the top as the sidebar is, never between two. A 48px gap keeps the next
+	   one just out of sight. The one nearest its place is the chosen one. Snapping is off
+	   while the script slides, or it would catch every step of the way. */
+	@media (min-width: 980px) {
+		:global(html:has(main.work)) {
+			scroll-snap-type: y mandatory;
+		}
+		:global(html.sliding:has(main.work)) {
+			scroll-snap-type: none;
+		}
+		.work :global(.card) {
+			scroll-snap-align: start;
+			scroll-margin-top: 24px;
+			transition: opacity 150ms ease-in;
+		}
 	}
 
-	/* Each overlay is an artwork layer plus a caption. On short desktop viewports only
-	   the artwork scales down (about its top-left,
-	   so it stays aligned with the column); the caption keeps its size and just moves up. */
-	.overlay-stage {
-		--overlay-scale: min(var(--scale-h, 1), var(--scale-w, 1));
+	/* Loading: the chosen project stays hidden until its images are in, then fades in as
+	   usual. If that takes a moment (`slow` on <html>), "Loading..." (Loading.astro) shows;
+	   on the page's first load the picker's names give way to its dots too, as in Figma
+	   2526:318. */
+	.work.loading :global(.card.chosen),
+	.work.fading :global(.card) {
+		opacity: 0;
 	}
-	/* Off overlays are hidden outright (after their fade), so live animations inside them
-	   (Warp checks visibility) stop running in the background. */
-	.overlay {
-		visibility: hidden;
-		transition:
-			opacity 200ms ease,
-			visibility 0s linear 200ms;
+	.work.first .picker-names {
+		opacity: 0;
 	}
-	.overlay :global(.art) {
-		background: #000;
-		transform-origin: top left;
-		transform: scale(var(--overlay-scale, 1));
+	:global(html.slow) .work.first .picker-names {
+		display: none;
 	}
-	.overlay :global(.caption) {
+	.picker-names {
+		transition: opacity 150ms ease-in 150ms;
+	}
+	/* A project's photos slide in from the right once it shows, one after another, and
+	   slip back out to the right as it goes. */
+	.work :global(.photo) {
+		translate: 0 0;
+		transition: translate 700ms cubic-bezier(0.22, 1, 0.36, 1) calc(150ms + var(--n) * 90ms);
+	}
+	.work :global(.card:not(.chosen) .photo),
+	.work.loading :global(.card.chosen .photo) {
+		translate: calc(100% + 120px) 0;
+		transition: translate 300ms ease-in;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.work :global(.photo) {
+			transition: none;
+		}
+	}
+
+	/* --at follows the scroll (fractional between projects), so the mark moves with the
+	   page rather than easing on its own. */
+	.picker {
+		--mark-y: calc(var(--at, 0) * 23px);
+	}
+	.picker-mark {
+		translate: 0 var(--mark-y);
+	}
+	.picker-ink {
+		clip-path: inset(var(--mark-y) 0 calc(100% - var(--mark-y) - 23px) 0);
+	}
+
+	/* As in the sidebar's nav: a faint cream fill sweeps in from the left on hover. */
+	.picker-link::before {
+		content: '';
 		position: absolute;
-		top: calc(690px * var(--overlay-scale, 1));
-		left: 24px;
-		width: 418px;
+		inset: 0;
+		z-index: -1;
+		background: color-mix(in srgb, var(--color-cream) 10%, transparent);
+		opacity: 0;
+		scale: 0 1;
+		transform-origin: left;
+		transition:
+			scale 250ms ease,
+			opacity 250ms ease,
+			background-color 250ms ease;
 	}
-	@media (min-width: 1024px) and (max-height: 880px) {
-		.overlay-stage {
-			--scale-h: 0.9;
-		}
-	}
-	@media (min-width: 1024px) and (max-height: 800px) {
-		.overlay-stage {
-			--scale-h: 0.8;
-		}
-	}
-	@media (min-width: 1024px) and (max-height: 710px) {
-		.overlay-stage {
-			--scale-h: 0.7;
-		}
+	.picker-link:not([aria-current]):hover::before {
+		opacity: 1;
+		scale: 1;
 	}
 
-	@media (hover: hover) {
-		/* A section lights up when one of its entries, or the section itself, is hovered. */
-		.work :global(.section:has(.entry:hover)),
-		.work :global(.section[data-hover]:hover) {
-			--head: var(--org-accent, var(--color-cream));
-		}
-		.work :global(.entry:hover) {
-			color: var(--accent, var(--color-cream));
-		}
-		/* Everything outside whichever section the pointer is in steps back, overlay or not.
-		   Hovering the portfolio card dims nothing. */
-		.work:has(:global(.section:hover)) :global(.section:not(:hover)),
-		.work:has(:global(.section:hover)) .card {
-			opacity: 0.6;
-		}
+	/* A click picks a name as the sidebar's nav does: rather than sliding down the list
+	   with the page, the mark fades out where it is and the clicked name's fill turns
+	   solid, its text easing to bold ink. When the page lands, the mark is back under it,
+	   drawn the same, and the click's look is dropped at once. */
+	.picker.jumping {
+		--mark-y: calc(var(--from, 0) * 23px);
+	}
+	.picker.jumping .picker-mark,
+	.picker.jumping .picker-ink {
+		opacity: 0;
+		transition: opacity 250ms ease;
+	}
+	.picker-link.picked {
+		color: var(--sidebar-ink);
+		font-weight: bold;
+	}
+	.picker-link.picked::before {
+		opacity: 1;
+		scale: 1;
+		background: var(--color-cream);
+	}
+	.picker-link.settle,
+	.picker-link.settle::before {
+		transition: none;
+	}
+
+	/* Figma's Rectangle 97: 9px squares in five columns 26.5px apart (the outer ones on the
+	   edges), rows about 26.4px apart ending on the bottom edge. Each tile is one square at
+	   its bottom-left; `round` fits whole rows to the column's height. */
+	.picker-dots {
+		mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26.5' height='26.4' viewBox='0 0 26.5 26.4' preserveAspectRatio='none'%3E%3Cpath d='M0 17.4h9v9H0z'/%3E%3C/svg%3E");
+		mask-size: 26.5px 26.4px;
+		mask-repeat: repeat round;
 	}
 </style>
+
+<script>
+	// On desktop the page steps through the projects: a scroll (or the up and down arrows)
+	// slides the page to the next or previous one, and the one in place is chosen: the
+	// picker marks it and its photos slide in. The picker slides to a project too. The choice is kept in the address's hash,
+	// so a link or a reload opens the same project.
+	const desktop = matchMedia('(min-width: 980px)');
+	const cards = () => [...document.querySelectorAll<HTMLElement>('.work .card')];
+	const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	// The images a project shows on screen (the cover, and the photos where they show) that
+	// haven't loaded yet.
+	const unloaded = (card: HTMLElement) =>
+		[...card.querySelectorAll('img')].filter((img) => img.getClientRects().length > 0 && !img.complete);
+	// On the first load, hold the project back until its images are in (it fades in once
+	// they are); if that takes a moment, "Loading..." shows meanwhile.
+	async function reveal(card: HTMLElement) {
+		const main = document.querySelector<HTMLElement>('.work')!;
+		const pending = unloaded(card);
+		if (pending.length) {
+			main.classList.add('loading');
+			const slow = setTimeout(() => document.documentElement.classList.add('slow'), 400);
+			await Promise.all(
+				pending.map(
+					(img) =>
+						new Promise((done) => {
+							img.addEventListener('load', done, { once: true });
+							img.addEventListener('error', done, { once: true });
+						}),
+				),
+			);
+			clearTimeout(slow);
+		}
+		main.classList.remove('loading', 'first');
+		document.documentElement.classList.remove('slow');
+	}
+
+	const chosen = () => cards().findIndex((c) => c.classList.contains('chosen'));
+	const choose = (i: number) => {
+		const all = cards();
+		const links = [...document.querySelectorAll<HTMLAnchorElement>('.work .picker-link')];
+		if (!all[i] || i === chosen()) return;
+		all.forEach((card, k) => card.classList.toggle('chosen', k === i));
+		links.forEach((a, k) => (k === i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+		history.replaceState(history.state, '', `#${all[i].id}`);
+	};
+
+	// Slide the page so card i sits in place, damped as Lenis does it (its default lerp
+	// of 0.1 at 60fps): each frame closes a fixed share of the way left, so it sets off
+	// quickly and settles softly. Calling it again mid-slide just moves the target.
+	// Snapping is off meanwhile; `sliding` is cleared when it lands.
+	let slide = 0;
+	let target = 0;
+	let targetY = 0;
+	const sliding = () => slide !== 0;
+	function scrollToCard(i: number) {
+		const card = cards()[i];
+		if (!card) return;
+		target = i;
+		targetY = Math.min(scrollY + card.getBoundingClientRect().top - 24, document.documentElement.scrollHeight - innerHeight);
+		if (reduced()) {
+			scrollTo(0, targetY);
+			return;
+		}
+		if (sliding()) return;
+		const root = document.documentElement;
+		root.classList.add('sliding');
+		let y = scrollY;
+		let last = performance.now();
+		const step = (now: number) => {
+			const dt = Math.min((now - last) / 1000, 0.1);
+			last = now;
+			y += (targetY - y) * (1 - Math.exp(-6 * dt));
+			if (Math.abs(targetY - y) < 0.5) y = targetY;
+			scrollTo(0, y);
+			if (y !== targetY) {
+				slide = requestAnimationFrame(step);
+			} else {
+				slide = 0;
+				root.classList.remove('sliding');
+				endJump();
+			}
+		};
+		slide = requestAnimationFrame(step);
+	}
+	const go = (dir: number) => {
+		cancelFade();
+		endJump();
+		scrollToCard(Math.min(Math.max((sliding() ? target : chosen()) + dir, 0), cards().length - 1));
+	};
+
+	// A click on the picker marks the name as the sidebar's nav does (see the styles): the
+	// mark fades out in place and the clicked name fills, until the page lands. A scroll
+	// or key mid-way hands back to the sliding mark.
+	const picker = () => document.querySelector<HTMLElement>('.work .picker');
+	function jump(link: HTMLAnchorElement) {
+		const nav = picker();
+		if (!nav || reduced()) return;
+		if (!nav.classList.contains('jumping')) {
+			nav.style.setProperty('--from', nav.style.getPropertyValue('--at') || '0');
+			nav.classList.add('jumping');
+		}
+		for (const a of nav.querySelectorAll('.picker-link')) a.classList.toggle('picked', a === link);
+	}
+	function endJump() {
+		const nav = picker();
+		if (!nav?.classList.contains('jumping')) return;
+		const links = [...nav.querySelectorAll<HTMLElement>('.picker-link')];
+		links.forEach((a) => a.classList.add('settle'));
+		nav.classList.remove('jumping');
+		links.forEach((a) => a.classList.remove('picked'));
+		void nav.offsetWidth; // apply the snap before easing comes back
+		links.forEach((a) => a.classList.remove('settle'));
+	}
+
+	// A scroll moves one project. A trackpad sends a stream of wheel events for one swipe
+	// (ramping up, then dying away as it coasts), so a swipe takes one step, once it has
+	// scrolled a little (a nudge or a stray touch takes none). After a step, nothing more
+	// counts until the events stop for a moment, or until the coasting has died right
+	// down and a new swipe clearly starts over it. A step mid-slide carries on from where
+	// that slide is headed.
+	// A project taller than the window scrolls as usual until its edge comes into view.
+	const QUIET = 220; // ms without events that ends a gesture
+	const THRESHOLD = 40; // px a gesture scrolls before it takes a step
+	let lastWheel = 0;
+	let stepped = 0; // when the last step was taken, 0 if this gesture hasn't taken one
+	let travel = 0; // how far this gesture has scrolled, towards THRESHOLD
+	let peak = 0; // the largest event since the step
+	let low = Infinity; // the smallest since that peak
+	function onWheel(e: WheelEvent) {
+		if (!desktop.matches || e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+		const dir = Math.sign(e.deltaY);
+		const card = cards()[chosen()];
+		const rect = card?.getBoundingClientRect();
+		if (rect && !sliding() && (dir > 0 ? rect.bottom > innerHeight + 1 : rect.top < 23)) return;
+		e.preventDefault();
+		const now = performance.now();
+		// A line or page of scrolling (a mouse wheel, in some browsers) counts as a full notch.
+		const delta = e.deltaMode ? THRESHOLD : Math.abs(e.deltaY);
+		if (now - lastWheel > QUIET) stepped = travel = 0;
+		lastWheel = now;
+		if (stepped) {
+			if (delta > peak && low === Infinity) peak = delta;
+			else low = Math.min(low, delta);
+			// A new swipe over the coasting: the events had faded to a fifth of their peak
+			// and now jump back up, well after the step.
+			const renewed = now - stepped > 400 && low < peak / 5 && delta > Math.max(low * 4, 15);
+			if (!renewed) return;
+			stepped = travel = 0;
+		}
+		travel += delta;
+		if (travel < THRESHOLD) return;
+		stepped = now;
+		peak = delta;
+		low = Infinity;
+		go(dir);
+	}
+
+	// How far the page has scrolled through the projects, in projects: 1.5 is halfway from
+	// the second to the third, measured at their resting place 24px from the top. The
+	// picker's mark sits there, and the nearest project is chosen.
+	function onScroll() {
+		if (!desktop.matches) return;
+		const tops = cards().map((c) => c.getBoundingClientRect().top - 24);
+		let k = 0;
+		while (k < tops.length - 1 && tops[k + 1] <= 0) k++;
+		const at = k < tops.length - 1 ? k + Math.min(Math.max(-tops[k] / (tops[k + 1] - tops[k]), 0), 1) : k;
+		document.querySelector<HTMLElement>('.work .picker')?.style.setProperty('--at', String(at));
+		choose(Math.round(at));
+	}
+
+	// A click on the picker fades between projects rather than sliding: the project fades
+	// out, the page jumps to the clicked one while nothing shows, and that one fades in
+	// (held back, as on the first load, until its images are in).
+	const FADE = 150; // ms, the cards' opacity transition
+	let fade = 0;
+	function fadeToCard(i: number) {
+		const main = document.querySelector<HTMLElement>('.work');
+		if (!main || reduced()) return scrollToCard(i);
+		cancelAnimationFrame(slide);
+		slide = 0;
+		document.documentElement.classList.remove('sliding');
+		clearTimeout(fade);
+		main.classList.add('fading');
+		fade = window.setTimeout(() => {
+			fade = 0;
+			const card = cards()[i];
+			if (card) scrollTo(0, Math.min(scrollY + card.getBoundingClientRect().top - 24, document.documentElement.scrollHeight - innerHeight));
+			endJump();
+			main.classList.remove('fading');
+			if (card) reveal(card);
+		}, FADE);
+	}
+	// A scroll or key mid-fade drops the fade and slides from where the page is.
+	function cancelFade() {
+		if (!fade) return;
+		clearTimeout(fade);
+		fade = 0;
+		document.querySelector('.work')?.classList.remove('fading');
+	}
+
+	function onClick(e: MouseEvent) {
+		const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('.work .picker-link');
+		if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+		e.preventDefault();
+		const i = [...document.querySelectorAll('.work .picker-link')].indexOf(link);
+		if (i === (sliding() ? target : chosen()) && !fade) return;
+		jump(link);
+		fadeToCard(i);
+	}
+
+	function onKey(e: KeyboardEvent) {
+		const el = e.target as HTMLElement;
+		if (e.metaKey || e.ctrlKey || e.altKey || el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+		if (!desktop.matches) return;
+		const step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+		if (!step) return;
+		e.preventDefault();
+		go(step);
+	}
+
+	document.addEventListener('astro:page-load', () => {
+		if (!document.querySelector('.work .picker')) return;
+		const fromHash = cards().findIndex((c) => `#${c.id}` === location.hash);
+		if (desktop.matches) {
+			if (fromHash > 0) cards()[fromHash].scrollIntoView();
+			onScroll();
+			reveal(cards()[Math.max(fromHash, 0)]);
+		}
+		addEventListener('click', onClick, true); // before the router, which would jump to the hash
+		addEventListener('keydown', onKey);
+		addEventListener('scroll', onScroll, { passive: true });
+		addEventListener('wheel', onWheel, { passive: false });
+	});
+	document.addEventListener('astro:before-swap', () => {
+		removeEventListener('click', onClick, true);
+		removeEventListener('keydown', onKey);
+		removeEventListener('scroll', onScroll);
+		removeEventListener('wheel', onWheel);
+		cancelAnimationFrame(slide);
+		slide = 0;
+		document.documentElement.classList.remove('sliding');
+		clearTimeout(fade);
+		fade = 0;
+	});
+</script>

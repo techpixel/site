@@ -1,90 +1,154 @@
-# Projects listed on /work. Order here is display order.
-#   section: hack-club → the Hack Club list (left column); personal → Personal Projects (right);
-#            older → the "Older Projects" group on /projects only
-#   featured: personal projects also listed on /work (/projects lists every personal project)
-#   title:   role on the project, shown under the name (from the resume)
-#   links:   Hack Club projects: small links under the title, shown as "Github • Website • HCB"
-#            (keys github / website / hcb get those labels; any other key is capitalised)
-#   href:    personal projects: the name itself links here
-#   logo:    a mark in src/pages/work.astro's logo map (SVG or alpha PNG in src/assets/work or src/assets/figma)
-#   color:   hover accent for the entry (name, mark, tags, sublinks)
-#   overlay: component in src/components/overlays shown while the entry is hovered
+# Projects. Order here is display order.
+#   cover:   /work shows every entry with a cover, as a card: src/assets/covers/<cover>.webp
+#            (3x renders of the Figma covers, section node 2481:697)
+#   heading: the card's title (defaults to name)
+#   tags:    pills (no longer shown on /work, which has `subtitle` instead)
+#   subtitle: the card's italic line under the title
+#   blurb:   the card's text; a blank line starts a new paragraph
+#   section: personal → listed on /projects; older → its "Older Projects" group
+#   name, time, href: how /projects lists an entry (the name links to href)
+#   links:   website → where the card links (else href); every link shows at the card's foot
+#            (portfolio → its writeup on portfolio.manitej.com/work/<id>, where one exists)
+#   title:   role on the project, from the resume (not shown at the moment)
+
 - id: horizons
   name: Horizons
   time: HC 2026
-  section: hack-club
   title: Lead UI/UX Designer & Engineer
   links:
     github: https://github.com/hackclub/horizons
     website: https://horizons.hackclub.com
+    portfolio: https://portfolio.manitej.com/work/horizons
     hcb: https://hcb.hackclub.com/horizons
-  logo: horizons
-  color: "#ffa400"
-  overlay: horizons
+  heading: Hack Club Horizons
+  subtitle: Hack Club Gap Year Project (2026)
+  cover: horizons
+  tags: [Lead, Product, Branding, UI/UX, Engineering]
+  blurb: >-
+    Horizons was a series of 6 hackathons around the world in San Francisco, Sydney, Berlin,
+    Singapore, Toronto, and Cairo! We had 50 organizers and 350 attendees across all events. 650
+    teens worked for over 23,000 hours on over 1,700 approved technical projects as a part of
+    Horizons.
 
 - id: midnight
   name: Midnight
   time: HC 2026
-  section: hack-club
   title: UI/UX Designer & Lead Frontend Engineer
   links:
     github: https://github.com/hackclub/midnight
     website: https://midnight.hackclub.com
+    portfolio: https://portfolio.manitej.com/work/midnight
     hcb: https://hcb.hackclub.com/midnight
-  logo: midnight
-  color: "#7b6da1" # Midnight's text tint in techpixel/portfolio (its bar is #453b61)
-  overlay: midnight
+  heading: Hack Club Midnight
+  subtitle: Hack Club Gap Year Project (2026)
+  cover: midnight
+  tags: [Lead, Product, Branding, UI/UX, Web]
+  blurb: >-
+    Midnight was a hackathon that brought 70+ teenagers around the world to Vienna, Austria to build projects at a murder mystery-themed hackathon! Midnight also included an online component with 200 teenagers working for 10,000 hours on 600 technical projects.
 
 - id: arcade
   name: Arcade
   time: GH + HC 2024
-  section: hack-club
   title: Program Designer & Engineer
   links:
-    # github: (no public hackclub/arcade repo found)
+    github: https://github.com/hackclub/arcade
     website: https://hackclub.com/arcade
     hcb: https://hcb.hackclub.com/arcade
-  logo: arcade
-  color: "#ff5c02"
-  overlay: arcade
+  heading: Hack Club Arcade
+  subtitle: Hack Club Intern Project (2024)
+  cover: arcade
+  tags: [Infrastructure, Product]
+  blurb: >-
+    Arcade was Hack Club’s first general YSWS program, ran in partnership with GitHub. Reached 10000+ teens globally and awarded $400,000 in grants and prizes.
+
+- id: warp
+  name: Warp
+  time: ""
+  links:
+    github: https://github.com/techpixel/warp
+  cover: warp
+  tags: [Engineering, Design]
+  blurb: >-
+    Warp is a silly little design utility that allows creating deformed (dare I say warped?)
+    vectors via. MVC and Green transformation functions.
+
+- id: manifesto
+  name: Manifesto
+  time: HC 2026
+  title: Designer
+  links:
+    github: https://github.com/hackclub/manifesto
+    website: https://manifesto.hackclub.com
+    portfolio: https://portfolio.manitej.com/work/manifesto
+  heading: Hack Club Manifesto
+  subtitle: Hack Club Gap Year Project (2026)
+  cover: manifesto
+  tags: [Storytelling]
+  blurb: >-
+    Made in 2 days, Manifesto is a love letter to Hack Club and a serious yet friendly invitation to apply to the Hack Club Gap Year Program. ~1,000 people applied.
+
+- id: bloom
+  name: Bloom
+  time: ""
+  links:
+    demo: https://www.youtube.com/watch?v=WBw9b6SvkiY
+    github: https://github.com/techpixel/bloom
+  subtitle: SVSD Challenge (2026)
+  cover: bloom
+  tags: [Product, UI/UX, Branding]
+  blurb: >-
+    Bloom is an app to help you stay mindful of your friendships.
 
 - id: campfire
   name: Campfire
   time: HC 2026
-  section: hack-club
   title: Engineering & Design
   links:
     github: https://github.com/hackclub/campfire
     website: https://campfire.hackclub.com
     hcb: https://hcb.hackclub.com/campfire
-  logo: campfire
-  color: "#5cbff8"
-  overlay: campfire
+  heading: Hack Club Campfire
+  subtitle: Hack Club Gap Year Project (2026)
+  cover: campfire
+  tags: [Infrastructure, Engineering]
+  blurb: >-
+    Campfire was an in-person game jam that took place in 200+ cities across the globe ran in partnership with Open Sauce. 18,000+ teenagers participated.
 
-- id: manifesto
-  name: Manifesto
-  time: HC 2026
-  section: hack-club
-  title: Designer
+- id: orchard
+  name: Orchard
+  time: "2026"
+  title: Volunteer Designer
   links:
-    github: https://github.com/hackclub/manifesto
-    website: https://manifesto.hackclub.com
-  logo: manifesto
-  color: "#ec3750"
-  overlay: manifesto
+    github: https://github.com/hackclub/orchard
+  subtitle: Volunteer
+  cover: orchard
+  tags: [Design]
+  blurb: |-
+    Orchard is an in-development batteries-included Kubernetes PaaS serving as an alternative to Docker-based Coolify.
+
+    Orchard is still in development! It will be released *eventually*.
+
+- id: sketch-intent
+  name: Sketch Intent
+  time: ""
+  links:
+    github: https://github.com/techpixel/sketchintent
+  subtitle: CalHacks Project (2026)
+  # cover: sketch-intent  # TEMP hidden from /work; uncomment to show it again
+  tags: [Engineering]
+  blurb: >-
+    Draw and explain visual ideas to agent with the power of sketching.
 
 - id: audio-visual
   name: TBD Audio Visual Project
   time: 2026, Current
   section: personal
-  featured: true
 
 - id: hero
   name: Hero
   time: 2026, In Development
   section: personal
   href: https://github.com/techpixel/hero
-  featured: true
 
 - id: gitgirl
   name: GitGirl
@@ -102,14 +166,7 @@
   name: This website!
   time: 2022-2026
   section: personal
-  featured: true
   href: https://github.com/techpixel/site
-
-- id: portfolio
-  name: Portfolio
-  time: "2026"
-  section: personal
-  href: https://github.com/techpixel/portfolio
 
 - id: homebridge-repl
   name: Homebridge-Repl

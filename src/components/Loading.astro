@@ -1,0 +1,67 @@
+---
+// "Loading..." (Figma 2526:318, 2542:2852): centred in the space right of the sidebar
+// (the whole width on phones), the letters bobbing in a wave. One for every page, kept
+// across page changes, shown while <html> has `slow`: a page change that takes a moment
+// (Layout.astro), or /work waiting on a project's images. First in the body, so it is
+// there even while the rest of the page is still arriving.
+---
+
+<p
+	transition:persist="loading"
+	class="loading-text pointer-events-none fixed top-[calc(50vh-21px)] left-[calc(50vw-62.5px)] z-20 text-[29.79px] whitespace-nowrap text-cream md:left-[calc(177px+(100vw-177px)/2-62.5px)]"
+	role="status"
+>
+	{[...'Loading...'].map((c, i) => <span style={`--i: ${i}`}>{c}</span>)}
+</p>
+
+<style>
+	/* Its own layer in page transitions, so it holds still while the page cross-fades. */
+	.loading-text {
+		view-transition-name: loading;
+		opacity: 0;
+		transition: opacity 200ms ease;
+	}
+	:global(html.slow) .loading-text {
+		opacity: 1;
+	}
+	/* Each letter bobs 14px, a little behind the one before, so a wave runs along them. At
+	   rest (reduced motion) they keep Figma's snapshot of the wave. */
+	.loading-text span {
+		display: inline-block;
+		animation: bob 900ms ease-in-out infinite alternate;
+		animation-delay: calc(var(--i) * -110ms);
+	}
+	@keyframes bob {
+		from {
+			translate: 0 0;
+		}
+		to {
+			translate: 0 14px;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.loading-text span {
+			animation: none;
+		}
+		.loading-text span:nth-child(1),
+		.loading-text span:nth-child(6) {
+			translate: 0 8px;
+		}
+		.loading-text span:nth-child(4) {
+			translate: 0 3px;
+		}
+		.loading-text span:nth-child(5) {
+			translate: 0 5px;
+		}
+		.loading-text span:nth-child(7),
+		.loading-text span:nth-child(10) {
+			translate: 0 12px;
+		}
+		.loading-text span:nth-child(8) {
+			translate: 0 11px;
+		}
+		.loading-text span:nth-child(9) {
+			translate: 0 14px;
+		}
+	}
+</style>

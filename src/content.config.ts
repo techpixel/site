@@ -3,8 +3,8 @@ import { file } from 'astro/loaders';
 import { parse } from 'yaml';
 
 /**
- * Project entries listed on /work, from src/data/projects.yaml. The org sections
- * around them (Hack Club, Purdue Hackers, Orchard…) are written in the page itself.
+ * Projects, from src/data/projects.yaml: the cards on /work (entries with a cover) and
+ * the lists on /projects.
  */
 const projects = defineCollection({
 	// The store keys entries by id and hands them back sorted, so the list's position
@@ -15,26 +15,26 @@ const projects = defineCollection({
 	schema: z.object({
 		order: z.number(),
 		name: z.string(),
-		/** Shown in parentheses after the name, e.g. "HC 2026". */
+		/** Shown in parentheses after the name on /projects, e.g. "2026". */
 		time: z.string(),
-		section: z.enum(['hack-club', 'personal', 'older']),
-		/** Personal projects: also listed on /work, not just /projects. */
-		featured: z.boolean().default(false),
-		/** Role on the project, shown under the name (e.g. "Lead UI/UX Designer & Engineer"). */
+		/** personal → listed on /projects; older → its "Older Projects" group. */
+		section: z.enum(['personal', 'older']).optional(),
+		/** Role on the project (e.g. "Lead UI/UX Designer & Engineer"); not shown at the moment. */
 		title: z.string().optional(),
-		/** Personal projects only: the name links here. */
+		/** The name links here on /projects, and the card on /work when there's no website. */
 		href: z.string().url().optional(),
-		/** Hack Club projects: small links under the name, in this order (label → url). */
+		/** Label → url. `website` is where the card on /work links. */
 		links: z.record(z.string(), z.string().url()).default({}),
+		/** /work: entries with a cover show as a card, src/assets/covers/<cover>.webp. */
+		cover: z.string().optional(),
+		/** The card's title; defaults to the name. */
+		heading: z.string().optional(),
+		/** The card's pills. */
 		tags: z.array(z.string()).default([]),
-		/** Key of a mark in src/pages/work.astro's logo map (an SVG in src/assets). */
-		logo: z.string().optional(),
-		/** Placeholder letter mark, for projects whose logo isn't exported yet. */
-		mark: z.string().max(2).optional(),
-		/** Hover accent (also the overlay's cue colour). */
-		color: z.string().optional(),
-		/** Key of a component in src/components/overlays, shown on hover. */
-		overlay: z.string().optional(),
+		/** The card's line under the title on /work, in italics. */
+		subtitle: z.string().optional(),
+		/** The card's text; a blank line starts a new paragraph, *stars* italicise. */
+		blurb: z.string().optional(),
 	}),
 });
 

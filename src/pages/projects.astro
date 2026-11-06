@@ -4,8 +4,8 @@ import Layout from '../layouts/Layout.astro';
 import ProjectEntry from '../components/work/ProjectEntry.astro';
 
 /**
- * Every personal project (Figma node 2423:1789), reached from /work's "View More".
- * Same YAML as /work: section `personal` lists here in full, `older` below it.
+ * Every personal project (Figma node 2423:1789). Not linked from the other pages since
+ * the /work redesign. Same YAML as /work: section `personal` lists here, `older` below it.
  */
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 const personal = projects.filter((p) => p.data.section === 'personal');
@@ -15,7 +15,7 @@ const older = projects.filter((p) => p.data.section === 'older');
 <Layout title="projects" description="Side projects Manitej has built since 2020." class="bg-black">
 	<main class="flex min-h-screen flex-col gap-6 bg-black px-6 pt-[34px] pb-[30px] md:flex-row md:items-start md:gap-[44px] md:p-6">
 		<nav class="w-[153px] shrink-0 pb-1" aria-label="Primary">
-			<a href="/work" class="block text-2xl text-cream hover:text-accent">← back</a>
+			<a href="/work" class="block text-2xl text-cream hover:text-link">← back</a>
 		</nav>
 
 		<!-- Each entry carries 8px of vertical padding; the lists' -my-2 cancels it at the

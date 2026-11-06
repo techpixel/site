@@ -9,6 +9,12 @@ export default defineConfig({
 	// Drives absolute OG/canonical URLs in src/components/SEO.astro
 	site: seo.url,
 	integrations: [svelte()],
+	// Fetch internal pages as soon as their links are on screen (not on hover), so a
+	// click swaps the page in without waiting on the network.
+	prefetch: {
+		prefetchAll: true,
+		defaultStrategy: 'viewport',
+	},
 	vite: {
 		plugins: [tailwindcss()],
 	},

@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
+import Loading from '../components/Loading.astro';
 import type { Props as SEOProps } from '../components/SEO.astro';
 
 export interface Props extends SEOProps {
@@ -21,10 +22,32 @@ const { class: className, ...seo } = Astro.props;
 		<!-- Client-side navigation: pages swap in place with a cross-fade, and the sidebar
 		     (transition:persist) stays put. -->
 		<ClientRouter />
-		<!-- The load fade is for a fresh load only; swapped-in pages already cross-fade. -->
+		<!-- The load fade is for a fresh load only; swapped-in pages already cross-fade.
+		     The theme (dark unless the sidebar's sun button chose light) is set before the
+		     first paint and carried onto each swapped-in page. -->
 		<script is:inline>
+			try {
+				if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
+			} catch {}
+			// A page change that takes more than a moment (the network, or in dev the router
+			// waiting on the next page's islands) fades the page out around the sidebar and
+			// shows "Loading..." (Figma 2542:2852), so a click never seems to do nothing.
+			// `slow` carries onto the new page, which clears it at once unless it is holding
+			// itself back (/work's main.loading, waiting on images; it clears it then).
+			let leaving;
+			document.addEventListener('astro:before-preparation', () => {
+				clearTimeout(leaving);
+				leaving = setTimeout(() => document.documentElement.classList.add('leaving', 'slow'), 400);
+			});
 			document.addEventListener('astro:before-swap', (e) => {
-				e.newDocument.documentElement.classList.add('page-transition');
+				clearTimeout(leaving);
+				const html = e.newDocument.documentElement;
+				html.classList.add('page-transition');
+				if (document.documentElement.classList.contains('slow')) html.classList.add('slow');
+				if (document.documentElement.dataset.theme) html.dataset.theme = document.documentElement.dataset.theme;
+			});
+			document.addEventListener('astro:page-load', () => {
+				if (!document.querySelector('main.loading')) document.documentElement.classList.remove('slow');
 			});
 		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,6 +58,7 @@ const { class: className, ...seo } = Astro.props;
 		/>
 	</head>
 	<body class={className}>
+		<Loading />
 		<slot />
 		<script>
 			import '../scripts/link-hints';

@@ -1,9 +1,17 @@
 ---
 import badgeStroke from '../assets/figma/badge-stroke.svg?url';
 import badgeNew from '../assets/figma/badge-new.svg?url';
-import arrowLeft from '../assets/figma/arrow-left.svg?url';
-import arrowRight from '../assets/figma/arrow-right.svg?url';
-import purdueHackersIcon from '../assets/figma/icon-purdue-hackers.svg?url';
+import iconSun from '../assets/figma/icon-sun.svg?url';
+import iconLinkedin from '../assets/figma/icon-linkedin.svg?url';
+import iconGithub from '../assets/figma/icon-github.svg?url';
+import iconInstagram from '../assets/figma/icon-instagram.svg?url';
+import site from '../data/site.json';
+
+const socialIcons: Record<string, string> = {
+	linkedin: iconLinkedin,
+	github: iconGithub,
+	instagram: iconInstagram,
+};
 
 interface Props {
 	current?: string;
@@ -14,20 +22,20 @@ const { current = 'home' } = Astro.props;
 // cream with dark bold text. Clicking an item turns its hover fill solid on the spot
 // (colour and weight easing over), so the page change has nothing left to animate.
 const navLink =
-	'nav-link relative isolate block h-[30px] w-[153px] px-[2px] text-2xl leading-[30px] text-cream transition-[color,font-weight] duration-250 not-aria-[current=page]:hover:text-accent aria-[current=page]:font-bold aria-[current=page]:text-(--sidebar-ink)';
+	'nav-link relative isolate block h-[30px] w-[153px] px-[2px] text-2xl leading-[30px] text-cream transition-[color,font-weight] duration-250 not-aria-[current=page]:hover:text-link aria-[current=page]:font-bold aria-[current=page]:text-(--sidebar-ink)';
 ---
 
 <!-- Kept across page changes by the client router. So nothing page-specific may live on
      it: the current nav item is re-marked by the script below, and the dark that sits on
      cream here (current item, badge, message button) is --sidebar-ink, inherited from the
-     page (global.css defaults it to the page ink; /work sets black). -->
+     page (global.css sets it to the page ink). -->
 <aside
 	transition:persist="sidebar"
 	class="sidebar order-last mt-auto flex w-full flex-col items-start gap-2 pt-[77px] md:sticky md:top-6 md:order-none md:mt-0 md:h-[calc(100vh-48px)] md:min-h-[640px] md:w-[153px] md:shrink-0 md:overflow-clip md:pt-0"
 >
 	<nav class="flex w-full flex-col pb-1" aria-label="Primary">
 		<a href="/" aria-current={current === 'home' ? 'page' : undefined} class={navLink}>home</a>
-		<a href="/work" aria-current={current === 'work' ? 'page' : undefined} class={navLink}>work</a>
+		<a href="/work" aria-current={current === 'work' ? 'page' : undefined} class={navLink}>projects</a>
 		<a href="https://letterbird.co/manitej" target="_blank" rel="noopener" class={navLink}>contact</a>
 	</nav>
 
@@ -44,13 +52,12 @@ const navLink =
 			style={`--badge: url("${badgeStroke}")`}
 			aria-hidden="true"
 		></span>
-		<img
-			src={badgeNew}
-			width="27.7219"
-			height="13.6139"
-			alt="New"
-			class="absolute left-[20px] top-[16px]"
-		/>
+		<span
+			class="icon absolute left-[20px] top-[16px] h-[13.6139px] w-[27.7219px] text-cream"
+			style={`--icon: url("${badgeNew}")`}
+			role="img"
+			aria-label="New"
+		></span>
 		<p class="absolute left-[6px] top-[45px] whitespace-nowrap text-base text-black">
 			want to get in touch?
 		</p>
@@ -58,24 +65,41 @@ const navLink =
 			href="https://letterbird.co/manitej"
 			target="_blank"
 			rel="noopener"
-			class="absolute left-[6px] top-[67px] flex h-[22px] w-[140px] items-center justify-center bg-(--sidebar-ink) p-2 text-base whitespace-nowrap text-accent underline decoration-from-font hover:text-cream"
+			class="absolute left-[6px] top-[67px] flex h-[22px] w-[140px] items-center justify-center bg-(--sidebar-ink) p-2 text-base whitespace-nowrap text-link underline decoration-from-font hover:text-link-hover"
 		>
 			send me a message
 		</a>
 	</div>
 
-	<!-- Purdue Hackers webring: previous member / ring home / next member. -->
-	<nav class="hidden w-[153px] items-center justify-between p-[2px] md:mt-auto md:flex" aria-label="Purdue Hackers webring">
-		<a href="https://ring.purduehackers.com/previous" class="block size-6 hover:opacity-70" aria-label="Previous site in the Purdue Hackers webring">
-			<img src={arrowLeft} width="24" height="24" alt="" class="block size-full" />
-		</a>
-		<a href="https://ring.purduehackers.com/" class="block size-5 hover:opacity-70" aria-label="Purdue Hackers webring">
-			<img src={purdueHackersIcon} width="20" height="20" alt="" class="block size-full" />
-		</a>
-		<a href="https://ring.purduehackers.com/next" class="block size-6 hover:opacity-70" aria-label="Next site in the Purdue Hackers webring">
-			<img src={arrowRight} width="24" height="24" alt="" class="block size-full" />
-		</a>
-	</nav>
+	<!-- Theme toggle (dark/light) at the left, socials at the right (Figma 2515:1343). -->
+	<div class="flex w-full items-center justify-between pt-4 md:mt-auto md:pt-0">
+		<button
+			type="button"
+			class="theme-toggle block h-6 w-[24.5px] shrink-0 cursor-pointer text-cream hover:opacity-70"
+			aria-label="Switch to light mode"
+		>
+			<span class="icon size-full" style={`--icon: url("${iconSun}")`}></span>
+		</button>
+		<ul class="flex items-center gap-2">
+			{
+				site.socials
+					.filter((s) => s.href)
+					.map((s) => (
+						<li>
+							<a
+								href={s.href}
+								target={s.href.startsWith('http') ? '_blank' : undefined}
+								rel="noopener"
+								aria-label={s.label}
+								class="block size-6 text-cream hover:opacity-70"
+							>
+								<span class="icon size-full" style={`--icon: url("${socialIcons[s.id]}")`} />
+							</a>
+						</li>
+					))
+			}
+		</ul>
+	</div>
 </aside>
 
 <style>
@@ -214,12 +238,31 @@ const navLink =
 		}
 	}
 
+	// The sun button flips between the dark and light themes (data-theme on <html>, kept
+	// in localStorage; Layout.astro applies it before the first paint).
+	const syncToggle = () => {
+		const light = document.documentElement.dataset.theme === 'light';
+		document.querySelector('.theme-toggle')?.setAttribute('aria-label', `Switch to ${light ? 'dark' : 'light'} mode`);
+	};
+	document.addEventListener('click', (e) => {
+		if (!(e.target as Element | null)?.closest('.theme-toggle')) return;
+		const html = document.documentElement;
+		const light = html.dataset.theme !== 'light';
+		if (light) html.dataset.theme = 'light';
+		else delete html.dataset.theme;
+		try {
+			localStorage.setItem('theme', light ? 'light' : 'dark');
+		} catch {}
+		syncToggle();
+	});
+
 	document.addEventListener('astro:after-swap', () => {
 		markCurrent();
 		easeFromBefore();
 		syncStripes();
 	});
 	document.addEventListener('astro:page-load', () => {
+		syncToggle();
 		markCurrent();
 		syncStripes();
 	});

@@ -1,0 +1,180 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import titleArrow from '../../assets/figma/icon-title-arrow.svg?url';
+import linkArrow from '../../assets/figma/icon-link-arrow.svg?url';
+import LinkHint from '../LinkHint.astro';
+
+/**
+ * A project on /work (Figma 2476:1062, light 2512:1242): the cover, the title (with an
+ * arrow box when it links somewhere), the subtitle and the blurb, and at the foot the
+ * project's links. On desktop it is 640px wide and as tall as the sidebar, the links
+ * right under the text; phones get a compact version in a list. The cover always shows
+ * whole, in its own shape (never cropped or squashed).
+ */
+interface Props {
+	/** The card's anchor, which /work's project picker links to. */
+	id?: string;
+	heading: string;
+	cover: ImageMetadata;
+	href?: string;
+	/** One line under the title, in italics (Figma 2536:1853). */
+	subtitle?: string;
+	blurb?: string;
+	/** Label key → url, from the YAML's `links`. */
+	links?: Record<string, string>;
+	/** Up to three photos from the project, scattered down the right edge (desktop). */
+	photos?: ImageMetadata[];
+	class?: string;
+}
+
+const { id, heading, cover, href, subtitle, blurb, links = {}, photos = [], class: className } = Astro.props;
+// A blank line starts a paragraph; *stars* italicise.
+const paragraphs = (blurb ?? '')
+	.split(/\n\s*\n/)
+	.filter(Boolean)
+	.map((p) => p.split('*').map((text, i) => ({ text, em: i % 2 === 1 })));
+// The cover at 1×, 2× and 3× the desktop width, as far as the file goes, and the file's
+// own width as the largest.
+const coverWidths = [...[640, 1280, 1920].filter((w) => w < cover.width), cover.width];
+const Link = href ? 'a' : 'div';
+// Links off the site show where they go in a popover by the pointer (Figma 2539:2832).
+const external = (url?: string) => !!url && url.startsWith('http');
+const linkProps = href ? { href, target: href.startsWith('http') ? '_blank' : undefined, rel: 'noopener' } : {};
+
+// The links in Figma's order and spelling (portfolio: the writeup on portfolio.manitej.com);
+// any other key shows as written.
+const LABELS: Record<string, string> = { website: 'Website', demo: 'Demo', portfolio: 'Design Writeup', hcb: 'HCB', github: 'Github' };
+const order = Object.keys(LABELS);
+const linkList = Object.entries(links)
+	.sort(([a], [b]) => (order.indexOf(a) + 1 || order.length + 1) - (order.indexOf(b) + 1 || order.length + 1))
+	.map(([key, url]) => ({ label: LABELS[key] ?? key, url }));
+
+// Where the photos sit (Figma 2517:1464, 2517:1463, 2517:1465, in that order, each over
+// the one before): measured from the window's top-right corner in Figma, running off its
+// right edge, with the frame's size (4px border included) and tilt. Only their spacing
+// is kept vertically; the stack is centred (below).
+const PHOTO_SLOTS = [
+	{ right: -12.58, top: 54.73, width: 320.86, height: 240.58, rotate: -5.47 },
+	{ right: -94.23, top: 295.3, width: 485, height: 273, rotate: 3.19 },
+	{ right: -39, top: 562, width: 374, height: 249, rotate: -5.19 },
+];
+// A photo keeps its own shape: its frame has the slot's area, right edge and middle, so a
+// photo cut to the slot's shape fills it exactly and a portrait one stands up in it.
+const photoFrame = (slot: (typeof PHOTO_SLOTS)[number], photo: ImageMetadata) => {
+	const ratio = photo.width / photo.height;
+	const width = Math.sqrt(slot.width * slot.height * ratio);
+	const height = width / ratio;
+	return { width, height, top: slot.top + (slot.height - height) / 2 };
+};
+// The photos as a stack, centred in the window so it has as much room above as below,
+// measured by their tilted outlines.
+const frames = photos.slice(0, PHOTO_SLOTS.length).map((photo, i) => {
+	const slot = PHOTO_SLOTS[i];
+	const frame = photoFrame(slot, photo);
+	const turn = (Math.abs(slot.rotate) * Math.PI) / 180;
+	const reach = (frame.width * Math.sin(turn) + frame.height * Math.cos(turn)) / 2;
+	const middle = frame.top + frame.height / 2;
+	return { photo, slot, ...frame, extent: [middle - reach, middle + reach] };
+});
+const stackTop = Math.min(...frames.map((f) => f.extent[0]));
+const stackHeight = Math.max(...frames.map((f) => f.extent[1])) - stackTop;
+---
+
+<li id={id} class:list={['card flex w-full flex-col items-start gap-6 md:min-h-[max(640px,calc(100vh-48px))] md:pb-7', className]}>
+	<div class="flex w-full flex-col items-start gap-[10px] md:gap-4">
+		<!-- The cover repeats the title's link, so it stays out of the tab order. -->
+		<Link {...linkProps} tabindex={href ? -1 : undefined} aria-hidden={href ? 'true' : undefined} class:list={['cover-link block w-full', { 'has-hint': external(href) }]}>
+			<!-- Covers are Figma's renders of the cover frames (the 4K set, section 2530:774, is
+			     1920×1240: 3× the desktop width), offered at 1×, 2× and 3× so sharp screens
+			     get a sharp one. -->
+			<Image
+				src={cover}
+				alt=""
+				widths={coverWidths}
+				sizes="(min-width: 980px) 640px, calc(100vw - 48px)"
+				class="block h-auto w-full"
+			/>
+			{external(href) && <LinkHint href={href!} plain />}
+		</Link>
+		<div class="flex w-full flex-col items-start gap-[10px] md:gap-2">
+			<h2 class="text-2xl font-bold text-white md:text-[29.79px]">
+				<!-- On hover (the title's or the cover's) the title and its arrow box take the link
+				     hover colour together; a title that links nowhere stays put. -->
+				<Link
+					{...linkProps}
+					class:list={[
+						'group flex items-center gap-[6px]',
+						{
+							'transition-colors hover:text-link-hover [.card:has(.cover-link:hover)_&]:text-link-hover': href,
+							'has-hint': external(href),
+						},
+					]}
+				>
+					{heading}
+					{
+						href && (
+							<span class="mt-[5px] mr-1 flex size-5 shrink-0 bg-white transition-colors group-hover:bg-link-hover [.card:has(.cover-link:hover)_&]:bg-link-hover" aria-hidden="true">
+								<span class="icon mt-[3.53px] ml-[3.33px] size-[13.333px] text-black" style={`--icon: url("${titleArrow}")`} />
+							</span>
+						)
+					}
+					{external(href) && <LinkHint href={href!} plain />}
+				</Link>
+			</h2>
+			{subtitle && <p class="text-base text-white italic md:text-xl">{subtitle}</p>}
+			{
+				paragraphs.length > 0 && (
+					<div class="text-base text-cream md:text-xl [&>p+p]:mt-[1lh]">
+						{paragraphs.map((runs) => (
+							<p>{runs.map((r) => (r.em ? <em>{r.text}</em> : r.text))}</p>
+						))}
+					</div>
+				)
+			}
+		</div>
+	</div>
+
+	<!-- On desktop the links shrink with the window's height (24px from about 920px tall,
+	     down to 16px), their arrows and spacing with them. -->
+	{
+		linkList.length > 0 && (
+			<ul class="flex flex-col items-start gap-[0.33em] text-xl md:text-[clamp(16px,2.6vh,24px)]">
+				{linkList.map((l) => (
+					<li>
+						<a
+							href={l.url}
+							target="_blank"
+							rel="noopener"
+							class:list={['flex items-center gap-[0.25em] whitespace-nowrap text-link transition-colors hover:text-link-hover', { 'has-hint': external(l.url) }]}
+						>
+							{l.label}
+							<span class="icon h-[0.83em] w-[0.46em] shrink-0" style={`--icon: url("${linkArrow}")`} aria-hidden="true" />
+							{external(l.url) && <LinkHint href={l.url} plain />}
+						</a>
+					</li>
+				))}
+			</ul>
+		)
+	}
+
+	{
+		photos.length > 0 && (
+			<div class="hidden min-[1402px]:block" aria-hidden="true">
+				{frames.map(({ photo, slot, width, height, top }, i) => {
+					return (
+						<Image
+							src={photo}
+							alt=""
+							widths={[Math.round(width), Math.round(width * 2)]}
+							sizes={`${width}px`}
+							loading="eager"
+							class="photo fixed border-4 border-black object-cover"
+							style={`right: ${slot.right}px; top: calc(50vh - ${stackHeight / 2}px + ${top - stackTop}px); width: ${width}px; height: ${height}px; rotate: ${slot.rotate}deg; --n: ${i}`}
+						/>
+					);
+				})}
+			</div>
+		)
+	}
+</li>
