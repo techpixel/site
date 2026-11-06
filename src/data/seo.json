@@ -1,9 +1,9 @@
 {
   "siteName": "manitej.com",
   "url": "https://manitej.com",
-  "title": "Manitej Boorgu",
-  "titleTemplate": "%s · Manitej Boorgu",
-  "description": "Hey! i'm manitej! I'm a programmer and designer doing things.",
+  "title": "manitej boorgu",
+  "titleTemplate": "%s · manitej boorgu",
+  "description": "hey! i'm manitej! I'm a programmer and designer doing things.",
   "image": "/banner.png",
   "imageAlt": "Manitej Boorgu",
   "type": "website",
