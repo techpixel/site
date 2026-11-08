@@ -27,8 +27,8 @@ const navLink =
 
 <!-- Kept across page changes by the client router. So nothing page-specific may live on
      it: the current nav item is re-marked by the script below, and the dark that sits on
-     cream here (current item, badge, message button) is --sidebar-ink, inherited from the
-     page (global.css sets it to the page ink). -->
+     cream here (current item, badge, its text, message button) is --sidebar-ink, inherited from the
+     page (global.css sets it to the page colour: ink, or black on /work). -->
 <aside
 	transition:persist="sidebar"
 	class="sidebar order-last mt-auto flex w-full flex-col items-start gap-2 pt-[77px] md:sticky md:top-6 md:order-none md:mt-0 md:h-[calc(100vh-48px)] md:min-h-[640px] md:w-[153px] md:shrink-0 md:overflow-clip md:pt-0"
@@ -36,7 +36,8 @@ const navLink =
 	<nav class="flex w-full flex-col pb-1" aria-label="Primary">
 		<a href="/" aria-current={current === 'home' ? 'page' : undefined} class={navLink}>home</a>
 		<a href="/work" aria-current={current === 'work' ? 'page' : undefined} class={navLink}>work</a>
-		<a href="https://letterbird.co/manitej" target="_blank" rel="noopener" class={navLink}>contact</a>
+		{/* TEMP: contact hidden (the user asked, 2026-11-08); the panel below still links there.
+		<a href="https://letterbird.co/manitej" target="_blank" rel="noopener" class={navLink}>contact</a> */}
 	</nav>
 
 	<!-- Diagonal stripe panel: 4px cream border, cream stripes on a 43.5px tile
@@ -58,14 +59,14 @@ const navLink =
 			role="img"
 			aria-label="New"
 		></span>
-		<p class="absolute left-[6px] top-[45px] whitespace-nowrap text-base text-black">
+		<p class="absolute left-[6px] top-[45px] whitespace-nowrap text-base text-(--sidebar-ink)">
 			want to get in touch?
 		</p>
 		<a
 			href="https://letterbird.co/manitej"
 			target="_blank"
 			rel="noopener"
-			class="absolute left-[6px] top-[67px] flex h-[22px] w-[140px] items-center justify-center bg-(--sidebar-ink) p-2 text-base whitespace-nowrap text-link underline decoration-from-font hover:text-link-hover"
+			class="absolute left-[6px] top-[67px] flex h-[22px] w-[140px] items-center justify-center bg-(--sidebar-ink) p-2 text-base whitespace-nowrap text-link underline decoration-from-font transition-colors hover:text-link-hover"
 		>
 			send me a message
 		</a>
@@ -75,7 +76,7 @@ const navLink =
 	<div class="flex w-full items-center justify-between pt-4 md:mt-auto md:pt-0">
 		<button
 			type="button"
-			class="theme-toggle block h-6 w-[24.5px] shrink-0 cursor-pointer text-cream hover:opacity-70"
+			class="theme-toggle block h-6 w-[24.5px] shrink-0 cursor-pointer text-link transition-colors hover:text-link-hover"
 			aria-label="Switch to light mode"
 		>
 			<span class="icon size-full" style={`--icon: url("${iconSun}")`}></span>
@@ -91,7 +92,7 @@ const navLink =
 								target={s.href.startsWith('http') ? '_blank' : undefined}
 								rel="noopener"
 								aria-label={s.label}
-								class="block size-6 text-cream hover:opacity-70"
+								class="block size-6 text-link transition-colors hover:text-link-hover"
 							>
 								<span class="icon size-full" style={`--icon: url("${socialIcons[s.id]}")`} />
 							</a>

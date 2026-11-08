@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Design tokens from the Figma "manitej.com 26" frame. */
-@theme {
+@theme static {
 	/* The desktop layout starts where the home page's 300px portrait clears the beach
 	   (24 + 153 + 26 + 300 + 24px ≤ 53.819vw). Narrower, every page takes the phone
 	   layout, since the sidebar switches with it. Raw media queries and matchMedia calls
@@ -14,12 +14,14 @@
 	--color-ink: #2f3039;
 	--color-cream: #ffeedc;
 	--color-link: #f8d2aa;
-	--color-link-hover: #f9c289;
+	--color-link-hover: #f5bf4f;
 	--color-black: #000;
 	--color-white: #fff;
 
-	/* Theme-dependent colours that aren't a swap of the ones above (see light mode below). */
+	/* The portrait's dithered cells, the same in both themes: lit in the cream, dark in the
+	   ink, so it melts into the page at its darks in dark mode and its lights in light. */
 	--color-portrait-tint: #ffeedc;
+	--color-portrait-shade: #2f3039;
 	/* Near-inks outside the palette: the checkerboard and the ghosted headline. */
 	--color-misc-ink-light: #36363e;
 	--color-misc-ghost: #393a42;
@@ -44,11 +46,10 @@
 :root[data-theme='light'] {
 	--color-ink: #ffeedc;
 	--color-cream: #2f3039;
-	--color-link: #474b68;
-	--color-link-hover: #41487a;
+	--color-link: #5f6591;
+	--color-link-hover: #2336b5;
 	--color-black: #ffeedc;
 	--color-white: #2f3039;
-	--color-portrait-tint: #e8e8ec;
 	--color-misc-ink-light: #f6e2cc;
 	--color-misc-ghost: #f3dfc9;
 	color-scheme: light;
@@ -69,6 +70,11 @@ body {
 	line-height: normal;
 	/* No rubber-band bounce or scroll chaining past the page's edges. */
 	overscroll-behavior: none;
+}
+/* /work's page is black, so the sidebar's darks are too. On body, since the sidebar
+   persists across pages and inherits from there rather than from <main>. */
+body:has(main.work) {
+	--sidebar-ink: var(--color-black);
 }
 
 /* Fade the page in on a fresh load. Pages swapped in by the client router already

@@ -101,9 +101,10 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 							width={300}
 							height={300}
 							cell={2}
+							ink="--color-portrait-tint"
+							shade="--color-portrait-shade"
 							alt="Manitej smiling in front of a wall of framed photos"
 						/>
-						<div class="absolute inset-0 bg-(--color-portrait-tint) mix-blend-multiply" aria-hidden="true"></div>
 					</div>
 
 					<div class="w-[290px] text-xs text-cream md:w-full md:text-base [&>p+p]:mt-[1lh]">
@@ -121,7 +122,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 								href="https://hackclub.com"
 								target="_blank"
 								rel="noopener"
-								class="underline decoration-from-font hover:text-link">Hack Club</a
+								class="text-link underline decoration-from-font transition-colors hover:text-link-hover">Hack Club</a
 							>{' '}
 							building programs and running events for technical teenagers and helping them become
 							great builders and doers.
@@ -130,7 +131,7 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 							You can reach me at{' '}
 							<a
 								href="#"
-								class="underline decoration-from-font hover:text-link"
+								class="text-link underline decoration-from-font transition-colors hover:text-link-hover"
 								data-email-user="me"
 								data-email-domain="manitej.com"
 								data-email-action="copy"
@@ -142,14 +143,14 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 					</div>
 
 					<!-- Purdue Hackers webring: previous member / ring home / next member. -->
-					<nav class="hidden w-[153px] items-center justify-between p-[2px] text-cream md:flex" aria-label="Purdue Hackers webring">
-						<a href="https://ring.purduehackers.com/previous" class="block size-6 hover:opacity-70" aria-label="Previous site in the Purdue Hackers webring">
+					<nav class="hidden items-center gap-[30px] p-[2px] text-link md:flex" aria-label="Purdue Hackers webring">
+						<a href="https://ring.purduehackers.com/previous" class="block size-6 transition-colors hover:text-link-hover" aria-label="Previous site in the Purdue Hackers webring">
 							<span class="icon size-full" style={`--icon: url("${arrowLeft}")`}></span>
 						</a>
-						<a href="https://ring.purduehackers.com/" class="block size-5 hover:opacity-70" aria-label="Purdue Hackers webring">
+						<a href="https://ring.purduehackers.com/" class="block size-5 transition-colors hover:text-link-hover" aria-label="Purdue Hackers webring">
 							<span class="icon size-full" style={`--icon: url("${purdueHackersIcon}")`}></span>
 						</a>
-						<a href="https://ring.purduehackers.com/next" class="block size-6 hover:opacity-70" aria-label="Next site in the Purdue Hackers webring">
+						<a href="https://ring.purduehackers.com/next" class="block size-6 transition-colors hover:text-link-hover" aria-label="Next site in the Purdue Hackers webring">
 							<span class="icon size-full" style={`--icon: url("${arrowRight}")`}></span>
 						</a>
 					</nav>

@@ -19,13 +19,18 @@
 		 */
 		ink?: string;
 		/**
+		 * With `ink`, draw the dark cells in this colour instead of leaving them clear, for a
+		 * two-tone picture. Read the same way as `ink`; the plain image shows without JavaScript.
+		 */
+		shade?: string;
+		/**
 		 * ms for the cells to come in one by one from the right, with some scatter, following
 		 * the left edge of a Warp sliding in over the same time on the same clock. 0 = none.
 		 */
 		reveal?: number;
 	}
 
-	let { src, alt, width, height, cell = 1, ink, reveal = 0 }: Props = $props();
+	let { src, alt, width, height, cell = 1, ink, shade, reveal = 0 }: Props = $props();
 
 	/*
 	 * The dithered look only holds when one cell of the pattern is one device pixel: a
@@ -92,7 +97,7 @@
 			ctx.drawImage(img, (cw - iw) / 2, (ch - ih) / 2, iw, ih);
 			const pixels = ctx.getImageData(0, 0, cw, ch);
 			ditherBayer(pixels);
-			if (ink) tint(pixels, ink.startsWith('--') ? getComputedStyle(canvas).getPropertyValue(ink) : ink);
+			if (ink) tint(pixels, color(ink), shade && color(shade));
 			if (revealing && (!revealStart || performance.now() - revealStart < reveal)) {
 				final = pixels;
 				turns = new Float32Array(cw * ch);
@@ -114,19 +119,24 @@
 			}
 			drawn = true;
 		};
-		// Lit cells take the ink, dark ones go clear. The canvas parses the colour.
-		const tint = ({ data }: ImageData, color: string) => {
-			ctx.fillStyle = color;
+		const color = (c: string) => (c.startsWith('--') ? getComputedStyle(canvas).getPropertyValue(c) : c);
+		// The canvas parses the colour.
+		const rgb = (c: string) => {
+			ctx.fillStyle = c;
 			const hex = ctx.fillStyle;
-			const r = parseInt(hex.slice(1, 3), 16);
-			const g = parseInt(hex.slice(3, 5), 16);
-			const b = parseInt(hex.slice(5, 7), 16);
+			return [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16));
+		};
+		// Lit cells take the ink, dark ones the shade, or go clear without one.
+		const tint = ({ data }: ImageData, ink: string, shade?: string) => {
+			const lit = rgb(ink);
+			const dark = shade ? rgb(shade) : lit;
 			for (let i = 0; i < data.length; i += 4) {
 				const on = data[i] > 127;
+				const [r, g, b] = on ? lit : dark;
 				data[i] = r;
 				data[i + 1] = g;
 				data[i + 2] = b;
-				data[i + 3] = on ? 255 : 0;
+				data[i + 3] = on || shade ? 255 : 0;
 			}
 		};
 		const schedule = () => {
@@ -162,9 +172,9 @@
 		addEventListener('resize', remeasure);
 		img.addEventListener('load', schedule);
 		if (img.complete) schedule();
-		// The theme (data-theme on <html>) can change the ink.
+		// The theme (data-theme on <html>) can change the ink and shade.
 		const themeWatch = new MutationObserver(schedule);
-		if (ink?.startsWith('--')) themeWatch.observe(document.documentElement, { attributeFilter: ['data-theme'] });
+		if (ink?.startsWith('--') || shade?.startsWith('--')) themeWatch.observe(document.documentElement, { attributeFilter: ['data-theme'] });
 
 		return () => {
 			observer.disconnect();
@@ -186,7 +196,7 @@
 	decoding="async"
 	loading="eager"
 	class="absolute inset-0 size-full object-cover transition-opacity"
-	class:opacity-0={drawn || ink}
+	class:opacity-0={drawn || (ink && !shade)}
 />
 <canvas
 	bind:this={canvas}

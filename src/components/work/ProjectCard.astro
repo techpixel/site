@@ -79,6 +79,10 @@ const frames = photos.slice(0, PHOTO_SLOTS.length).map((photo, i) => {
 });
 const stackTop = Math.min(...frames.map((f) => f.extent[0]));
 const stackHeight = Math.max(...frames.map((f) => f.extent[1])) - stackTop;
+// Figma's px, as laid out in a 1440 × 900 window; bigger windows scale the stack up with
+// whichever of their width and height is the tighter fit (never down, below that).
+const PHOTO_UNIT = 'max(1px, min(100vw / 1440, 100vh / 900))';
+const unit = (px: number) => `calc(${px} * var(--u))`;
 ---
 
 <li id={id} class:list={['card flex w-full flex-col items-start gap-6 md:min-h-[max(640px,calc(100vh-48px))] md:pb-7', className]}>
@@ -166,11 +170,11 @@ const stackHeight = Math.max(...frames.map((f) => f.extent[1])) - stackTop;
 						<Image
 							src={photo}
 							alt=""
-							widths={[Math.round(width), Math.round(width * 2)]}
-							sizes={`${width}px`}
+							widths={[1, 2, 3].map((k) => Math.round(width * k)).filter((w) => w < photo.width).concat(photo.width)}
+							sizes={`max(${width}px, min(${(width / 14.4).toFixed(3)}vw, ${(width / 9).toFixed(3)}vh))`}
 							loading="eager"
-							class="photo fixed border-4 border-black object-cover"
-							style={`right: ${slot.right}px; top: calc(50vh - ${stackHeight / 2}px + ${top - stackTop}px); width: ${width}px; height: ${height}px; rotate: ${slot.rotate}deg; --n: ${i}`}
+							class="photo fixed border-black object-cover"
+							style={`--u: ${PHOTO_UNIT}; right: ${unit(slot.right)}; top: calc(50vh + ${unit(top - stackTop - stackHeight / 2)}); width: ${unit(width)}; height: ${unit(height)}; border-width: ${unit(4)}; rotate: ${slot.rotate}deg; --n: ${i}`}
 						/>
 					);
 				})}
