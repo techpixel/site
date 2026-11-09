@@ -12,6 +12,11 @@
 		/** Size of one dither cell, in device pixels (1 is the finest). */
 		cell?: number;
 		/**
+		 * Show the photo undithered while the pointer is over it: in full tone, run from the
+		 * shade to the ink, when it has both, or else as it is.
+		 */
+		peek?: boolean;
+		/**
 		 * Draw the lit cells in this colour and leave the dark ones clear, for a dithered
 		 * photo used as a tint over the page rather than as a picture. The plain image
 		 * never shows then, even without JavaScript. A CSS custom property (`--name`) is
@@ -30,7 +35,7 @@
 		reveal?: number;
 	}
 
-	let { src, alt, width, height, cell = 1, ink, shade, reveal = 0 }: Props = $props();
+	let { src, alt, width, height, cell = 1, ink, shade, reveal = 0, peek = false }: Props = $props();
 
 	/*
 	 * The dithered look only holds when one cell of the pattern is one device pixel: a
@@ -42,7 +47,10 @@
 	 */
 	let img: HTMLImageElement;
 	let canvas: HTMLCanvasElement;
+	let toned: HTMLCanvasElement | undefined = $state();
 	let drawn = $state(false);
+	let peeking = $state(false);
+	const duotone = $derived(peek && !!ink && !!shade);
 
 	onMount(() => {
 		const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -117,7 +125,30 @@
 			} else {
 				ctx.putImageData(pixels, 0, 0);
 			}
+			if (toned && ink && shade) tone(toned, color(ink), color(shade));
 			drawn = true;
+		};
+		// The peek: the photo at the screen's full density, each pixel's luma (as the dither
+		// reads it) mapped from the shade to the ink.
+		const tone = (target: HTMLCanvasElement, ink: string, shade: string) => {
+			const tctx = target.getContext('2d', { willReadFrequently: true });
+			if (!tctx) return;
+			target.width = w;
+			target.height = h;
+			tctx.imageSmoothingQuality = 'high';
+			const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+			const iw = img.naturalWidth * scale;
+			const ih = img.naturalHeight * scale;
+			tctx.drawImage(img, (w - iw) / 2, (h - ih) / 2, iw, ih);
+			const pixels = tctx.getImageData(0, 0, w, h);
+			const { data } = pixels;
+			const lit = rgb(ink);
+			const dark = rgb(shade);
+			for (let i = 0; i < data.length; i += 4) {
+				const luma = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+				for (let c = 0; c < 3; c++) data[i + c] = dark[c] + (lit[c] - dark[c]) * luma;
+			}
+			tctx.putImageData(pixels, 0, 0);
 		};
 		const color = (c: string) => (c.startsWith('--') ? getComputedStyle(canvas).getPropertyValue(c) : c);
 		// The canvas parses the colour.
@@ -196,11 +227,22 @@
 	decoding="async"
 	loading="eager"
 	class="absolute inset-0 size-full object-cover transition-opacity"
-	class:opacity-0={drawn || (ink && !shade)}
+	class:opacity-0={(drawn && !(peeking && !duotone)) || (ink && !shade)}
 />
+{#if duotone}
+	<canvas
+		bind:this={toned}
+		class="absolute inset-0 size-full transition-opacity"
+		class:opacity-0={!peeking}
+		aria-hidden="true"
+	></canvas>
+{/if}
 <canvas
 	bind:this={canvas}
-	class="absolute inset-0 size-full [image-rendering:pixelated]"
+	class="absolute inset-0 size-full transition-opacity [image-rendering:pixelated]"
 	class:invisible={!drawn}
+	class:opacity-0={peeking}
 	aria-hidden="true"
+	onpointerenter={peek ? () => (peeking = true) : undefined}
+	onpointerleave={peek ? () => (peeking = false) : undefined}
 ></canvas>
