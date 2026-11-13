@@ -8,9 +8,11 @@ import site from '../data/site.json';
 
 // Flat "YOU'RE ON MANITEJ DOT COM" (manitej.com-2, src/assets/foreground.svg @ 2f1591b); Warp bends it live.
 import headline from '../assets/headline-flat.svg?raw';
-// Full-tone portrait from techpixel/portfolio; Portrait.svelte dithers it on the client.
+// Full-tone portrait from techpixel/portfolio; Portrait.svelte dithers it into tiles on the
+// client, like the beach.
 import portrait from '../assets/portrait.webp';
-// The beach behind the desktop page (Figma node 2495:660), dithered on the client like the portrait.
+// The beach behind the desktop page (Figma node 2495:660), dithered on the client into the
+// digital-passports tiles (Figma PdAVebRef47ubEgGalRoZO, node 20:9051).
 import beach from '../assets/beach.webp';
 import songArt from '../assets/figma/song-art.png';
 import arrowLeft from '../assets/figma/arrow-left.svg?url';
@@ -33,11 +35,12 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 		<!-- Checkerboard, bottom-right (phones; desktop has the beach instead) -->
 		<div class="checkerboard pointer-events-none absolute right-0 bottom-0 size-[190px] md:hidden" aria-hidden="true"></div>
 
-		<!-- Beach (desktop): the photo dithered into cells of --color-cream at half strength, filling the
+		<!-- Beach (desktop): the photo dithered into tiles in eight shades from the page's ink to cream, at
+		     half strength, so its end shade is the page showing through, filling the
 		     right of the page under the headline's band. Sized in vw like the headline. Its
-		     cells sweep in from the right, in step with the headline. -->
+		     tiles sweep in from the top-right corner, in step with the headline. -->
 		<div class="accent-box pointer-events-none absolute right-0 bottom-0 hidden opacity-50 md:block" aria-hidden="true">
-			<Portrait client:load src={beach.src} width={beach.width} height={beach.height} cell={2} ink="--color-cream" reveal={1200} alt="" />
+			<Portrait client:load src={beach.src} width={beach.width} height={beach.height} tile={12} palette={['--color-ink', '--color-cream']} shades={8} clip={0.01} gamma={0.55} reveal={1200} alt="" />
 		</div>
 
 		<!-- Headline (desktop): flat SVG, waved live by Warp, top-right. It slides in from the
@@ -100,7 +103,9 @@ const projectLogos: Record<string, { src: string; width: number; height: number 
 							src={portrait.src}
 							width={300}
 							height={300}
-							cell={2}
+							tile={4}
+							palette={['--color-portrait-shade', '--color-portrait-tint']}
+							shades={8}
 							peek
 							ink="--color-portrait-tint"
 							shade="--color-portrait-shade"

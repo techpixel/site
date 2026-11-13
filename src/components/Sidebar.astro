@@ -41,10 +41,11 @@ const navLink =
 	</nav>
 
 	<!-- Diagonal stripe panel: 4px cream border, cream stripes on a 43.5px tile
-	     (same geometry as the Figma pattern) that slide slowly and loop seamlessly. The fill
+	     (same geometry as the Figma pattern) that slide steadily and loop seamlessly. The fill
 	     is one tile wider than the panel and moved with a transform, so the slide runs on
-	     the compositor instead of repainting the panel every frame. -->
-	<div class="stripes hidden min-h-px w-full flex-1 overflow-clip border-4 border-cream md:block" aria-hidden="true">
+	     the compositor instead of repainting the panel every frame. The stripes can be
+	     grabbed and flung (script below). -->
+	<div class="stripes hidden cursor-grab touch-none select-none active:cursor-grabbing min-h-px w-full flex-1 overflow-clip border-4 border-cream md:block" aria-hidden="true">
 		<div class="stripes-fill h-full w-[calc(100%+43.5px)] bg-cream"></div>
 	</div>
 
@@ -159,7 +160,7 @@ const navLink =
 		mask-repeat: repeat;
 		mask-position: 0 0;
 		translate: -43.5px 0;
-		animation: stripes-slide 10s linear infinite;
+		animation: stripes-slide 2.5s linear infinite;
 	}
 
 	/* One full tile period per loop, so the wrap is invisible. */
@@ -235,13 +236,117 @@ const navLink =
 		before.clear();
 	}
 
-	// Moving the sidebar also restarts its stripe loop, so pin the loop to the page's
-	// clock (which keeps running across client-side navigations): it carries on unbroken.
-	function syncStripes() {
-		for (const anim of document.querySelector('.stripes-fill')?.getAnimations() ?? []) {
-			const period = Number(anim.effect?.getTiming().duration) || 0;
-			if (period) anim.currentTime = performance.now() % period;
+	// The stripes can be grabbed and flung, and they're heavy: while held they're pulled
+	// after the pointer by a spring rather than stuck to it, so they lag and settle with a
+	// slight overshoot, and never faster than a top speed, so a hard yank just leaves them
+	// trundling after the pointer; let go and they keep that momentum, coasting a long way before
+	// easing back to the drift. Everything runs on one number, the pattern's phase in px
+	// along x: the bands are 45°, so moving the pointer by (dx, dy) shifts them by dx + dy,
+	// and a drag along the bands doesn't move them at all. While held or moving, the
+	// slide animation is paused and scrubbed to that phase; once settled it plays on from
+	// there. With reduced motion there is no drift: the fill is moved directly.
+	const TILE = 43.5;
+	const PULL = 0.00012; // spring stiffness toward the pointer, per ms²
+	const DAMP = 0.018; // spring damping while held, per ms (a touch under critical)
+	const COAST = 900; // ms for a released fling's extra speed to fall to 1/e
+	const TOP = 0.8; // px per ms: as fast as their weight lets them go, however hard they're pulled
+	const fill = () => document.querySelector<HTMLElement>('.stripes-fill');
+	const slide = () => fill()?.getAnimations()[0];
+	const period = (anim: Animation) => Number(anim.effect?.getTiming().duration) || 1;
+	const wrap = (x: number) => ((x % TILE) + TILE) % TILE;
+	let phase = 0; // px, unwrapped; only current while held or moving
+	let target = 0; // where the pointer has dragged the phase to
+	let velocity = 0; // px per ms
+	let held = false;
+	let moving = 0; // rAF id
+
+	const drift = () => {
+		const anim = slide();
+		return anim ? TILE / period(anim) : 0;
+	};
+	function readPhase() {
+		const anim = slide();
+		if (anim) phase = (Number(anim.currentTime) / period(anim)) * TILE;
+	}
+	function show() {
+		const anim = slide();
+		if (anim) {
+			anim.pause();
+			anim.currentTime = (wrap(phase) / TILE) * period(anim);
+		} else {
+			fill()?.style.setProperty('translate', `${wrap(phase) - TILE}px 0`);
 		}
+	}
+
+	function move() {
+		let last = performance.now();
+		const step = (now: number) => {
+			const dt = Math.min(now - last, 32);
+			last = now;
+			const base = drift();
+			if (held) {
+				velocity += (PULL * (target - phase) - DAMP * velocity) * dt;
+				velocity = Math.max(-TOP, Math.min(TOP, velocity));
+			} else {
+				velocity = base + (velocity - base) * Math.exp(-dt / COAST);
+			}
+			phase += velocity * dt;
+			show();
+			if (held || Math.abs(velocity - base) > 0.003) {
+				moving = requestAnimationFrame(step);
+			} else {
+				moving = 0;
+				slide()?.play();
+			}
+		};
+		moving = requestAnimationFrame(step);
+	}
+
+	let lastX = 0;
+	let lastY = 0;
+	document.addEventListener('pointerdown', (e) => {
+		const panel = (e.target as Element | null)?.closest<HTMLElement>('.stripes');
+		if (!panel || e.button !== 0) return;
+		e.preventDefault();
+		panel.setPointerCapture(e.pointerId);
+		// Catch them as they are: still moving, they keep their momentum into the grab.
+		if (!moving) {
+			readPhase();
+			velocity = drift();
+			move();
+		}
+		target = phase;
+		held = true;
+		lastX = e.clientX;
+		lastY = e.clientY;
+	});
+	document.addEventListener('pointermove', (e) => {
+		if (!held) return;
+		target += e.clientX - lastX + (e.clientY - lastY);
+		lastX = e.clientX;
+		lastY = e.clientY;
+	});
+	const release = () => {
+		held = false;
+	};
+	document.addEventListener('pointerup', release);
+	document.addEventListener('pointercancel', release);
+
+	// Moving the sidebar also restarts its stripe loop, so carry the phase over the swap
+	// (and keep it parked while the stripes are being moved).
+	let swapPhase: number | undefined;
+	document.addEventListener('astro:before-swap', () => {
+		if (!moving) readPhase();
+		swapPhase = phase;
+	});
+	function syncStripes() {
+		if (swapPhase === undefined) return;
+		if (moving) show();
+		else {
+			const anim = slide();
+			if (anim) anim.currentTime = (wrap(swapPhase) / TILE) * period(anim);
+		}
+		swapPhase = undefined;
 	}
 
 	// The sun button flips between the dark and light themes (data-theme on <html>, kept

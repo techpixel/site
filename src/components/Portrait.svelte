@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { flushSync, onMount } from 'svelte';
-	import { ditherBayer } from '../lib/dither';
+	import { ditherBayer, ditherTiles, TILE_CELLS } from '../lib/dither';
+	import { shades } from '../lib/color';
 	import { sweepStart, SLIDE_FROM } from '../lib/sweep';
 	import { pageFadingIn, withoutTransition } from '../lib/entrance';
 
@@ -12,6 +13,24 @@
 		height: number;
 		/** Size of one dither cell, in device pixels (1 is the finest). */
 		cell?: number;
+		/**
+		 * Dither in the passport tiles (lib/dither's ditherTiles) instead of the Bayer
+		 * pattern, each tile this many CSS pixels on a side, in `shades` colours from the
+		 * first of `palette` to the second; `cell` is ignored then, and `ink` and `shade` only
+		 * tone the peek.
+		 */
+		tile?: number;
+		/**
+		 * The tiles' darkest and lightest colours, each read like `ink` and redrawn when
+		 * the theme changes. The colours between share the lightest one's hue.
+		 */
+		palette?: [string, string];
+		/** How many colours the tiles use, the ends included (2 to 10). */
+		shades?: number;
+		/** The fraction of the photo's darkest cells that go to the darkest colour. */
+		clip?: number;
+		/** Bends the tiles' tones: below 1 lifts the darks off the darkest colour. */
+		gamma?: number;
 		/**
 		 * Show the photo undithered while the pointer is over it: in full tone, run from the
 		 * shade to the ink, when it has both, or else as it is.
@@ -36,7 +55,7 @@
 		reveal?: number;
 	}
 
-	let { src, alt, width, height, cell = 1, ink, shade, reveal = 0, peek = false }: Props = $props();
+	let { src, alt, width, height, cell = 1, tile, palette, shades: count = 4, clip, gamma, ink, shade, reveal = 0, peek = false }: Props = $props();
 
 	/*
 	 * The dithered look only holds when one cell of the pattern is one device pixel: a
@@ -79,6 +98,11 @@
 		let shown = 0;
 		const TURN_STEPS = 1024;
 		const SCATTER = 0.08;
+		const CHECKER_LAG = 0.06;
+		// The bottom row comes in this far behind the top, in reveals, so the sweep runs
+		// from the top-right corner; the reveal runs on for it, past the headline's slide.
+		const DOWN_LAG = 0.2;
+		const SPAN = 1 + DOWN_LAG;
 		const scatter = (x: number, y: number) => {
 			const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
 			return n - Math.floor(n);
@@ -86,7 +110,7 @@
 		const step = (now: number) => {
 			revealFrame = 0;
 			if (!final || !out || !order || !starts) return;
-			const p = Math.min(1, (now - revealStart) / reveal);
+			const p = Math.min(1, (now - revealStart) / reveal / SPAN);
 			if (p >= 1) {
 				ctx.putImageData(final, 0, 0);
 				return;
@@ -104,8 +128,10 @@
 		const draw = () => {
 			frame = 0;
 			if (!w || !h || !img.complete || !img.naturalWidth) return;
-			const cw = Math.max(1, Math.round(w / cell));
-			const ch = Math.max(1, Math.round(h / cell));
+			// With tiles, a canvas pixel is one cell of a tile, a whole number of device pixels.
+			const px = tile ? Math.max(1, Math.round((tile / TILE_CELLS) * devicePixelRatio)) : cell;
+			const cw = Math.max(1, Math.round(w / px));
+			const ch = Math.max(1, Math.round(h / px));
 			canvas.width = cw;
 			canvas.height = ch;
 			ctx.imageSmoothingEnabled = true;
@@ -115,22 +141,38 @@
 			const iw = img.naturalWidth * scale;
 			const ih = img.naturalHeight * scale;
 			ctx.drawImage(img, (cw - iw) / 2, (ch - ih) / 2, iw, ih);
-			const pixels = ctx.getImageData(0, 0, cw, ch);
-			ditherBayer(pixels);
-			if (ink) tint(pixels, color(ink), shade && color(shade));
-			if (revealing && (!revealStart || performance.now() - revealStart < reveal)) {
+			let pixels = ctx.getImageData(0, 0, cw, ch);
+			if (tile) {
+				const colors = Math.max(2, Math.min(10, Math.round(count)));
+				pixels = ditherTiles(pixels, { colors, clip, gamma });
+				if (palette) paint(pixels, shades(rgb(color(palette[0])), rgb(color(palette[1])), colors));
+			} else {
+				ditherBayer(pixels);
+				if (ink) tint(pixels, color(ink), shade && color(shade));
+			}
+			if (revealing && (!revealStart || performance.now() - revealStart < reveal * SPAN)) {
 				final = pixels;
 				const buckets = new Uint16Array(cw * ch);
 				const counts = new Uint32Array(TURN_STEPS + 1);
+				// Tiles turn at their own column, with one scatter, and come in as a checker
+				// first (the top-left cell and its diagonals), the rest CHECKER_LAG later.
+				const g = tile ? TILE_CELLS : 1;
 				for (let y = 0; y < ch; y++) {
 					for (let x = 0; x < cw; x++) {
-						// When the edge reaches the column, undoing Warp's quartic ease-out so
-						// the sweep keeps pace with it. The scatter is in time, not distance:
-						// the ease crawls at the end, where a spread in distance would hold a
-						// ragged band at the left edge for most of the reveal.
-						const edge = 1 - ((x + 1) / cw / SLIDE_FROM) ** 0.25;
-						const turn = Math.max(0, Math.min(1, edge + (scatter(x, y) - 0.5) * SCATTER));
-						const b = Math.min(TURN_STEPS, Math.floor(turn * TURN_STEPS));
+						const tx = Math.floor(x / g);
+						const ty = Math.floor(y / g);
+						// When Warp's sliding edge reaches the column, undoing its quartic
+						// ease-out so the top row keeps pace with the headline; each row below
+						// comes a little later, up to DOWN_LAG at the bottom, so the sweep runs
+						// from the top-right corner. The scatter is in time, not distance: the
+						// ease crawls at the end, where a spread in distance would hold a ragged
+						// band at the left edge for most of the reveal.
+						const edge = 1 - (Math.min(cw, (tx + 1) * g) / cw / SLIDE_FROM) ** 0.25;
+						const lag = tile && (x + y) % 2 ? CHECKER_LAG : 0;
+						const turn =
+							Math.max(0, Math.min(1, edge + (scatter(tx, ty) - 0.5) * SCATTER + lag)) +
+							(Math.min(ch, ty * g) / ch) * DOWN_LAG;
+						const b = Math.min(TURN_STEPS, Math.floor((turn / SPAN) * TURN_STEPS));
 						buckets[y * cw + x] = b;
 						counts[b]++;
 					}
@@ -198,6 +240,15 @@
 				data[i + 3] = on || shade ? 255 : 0;
 			}
 		};
+		// Each tile cell takes the colour of its level.
+		const paint = ({ data }: ImageData, colors: number[][]) => {
+			for (let i = 0; i < data.length; i += 4) {
+				const [r, g, b] = colors[data[i]] ?? [0, 0, 0];
+				data[i] = r;
+				data[i + 1] = g;
+				data[i + 2] = b;
+			}
+		};
 		const schedule = () => {
 			if (!frame) frame = requestAnimationFrame(draw);
 		};
@@ -233,7 +284,7 @@
 		if (img.complete) schedule();
 		// The theme (data-theme on <html>) can change the ink and shade.
 		const themeWatch = new MutationObserver(schedule);
-		if (ink?.startsWith('--') || shade?.startsWith('--')) themeWatch.observe(document.documentElement, { attributeFilter: ['data-theme'] });
+		if ([ink, shade, ...(palette ?? [])].some((c) => c?.startsWith('--'))) themeWatch.observe(document.documentElement, { attributeFilter: ['data-theme'] });
 
 		return () => {
 			observer.disconnect();
@@ -255,7 +306,7 @@
 	decoding="async"
 	loading="eager"
 	class="absolute inset-0 size-full object-cover transition-opacity"
-	class:opacity-0={ink && !shade}
+	class:opacity-0={(tile || ink) && !shade}
 	class:plain-hidden={!(drawn && peeking && !duotone)}
 />
 {#if duotone}
