@@ -26,7 +26,8 @@
 	--color-misc-ink-light: #36363e;
 	--color-misc-ghost: #393a42;
 
-	--font-body: "Familjen Grotesk", sans-serif;
+	/* Self-hosted by Astro's fonts API (astro.config.mjs), fallbacks included. */
+	--font-body: var(--font-familjen-grotesk);
 
 	/* Figma text uses the font's natural leading; Tailwind's text-* utilities
 	   would otherwise pin line-height to 1.5. */

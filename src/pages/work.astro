@@ -84,6 +84,7 @@ const projects = (await getCollection('projects'))
 						<ProjectCard
 							id={p.id}
 							class={i === 0 ? 'chosen' : undefined}
+							priority={i === 0}
 							heading={p.data.heading ?? p.data.name}
 							cover={covers[p.data.cover!]}
 							href={p.data.links.website ?? p.data.href}
@@ -96,6 +97,17 @@ const projects = (await getCollection('projects'))
 				}
 			</ul>
 		</div>
+		<!-- Right after the projects, still before the first paint: if the project opening is
+		     already loaded (cached, or back on a page change), there is nothing to wait for,
+		     so it shows with the page instead of being held back and faded in after it. -->
+		<script is:inline>
+			{
+				const main = document.querySelector('main.work');
+				const card = (location.hash && document.getElementById(location.hash.slice(1))) || main.querySelector('.card.chosen');
+				const ready = [...(card?.querySelectorAll('img') ?? [])].every((img) => !img.getClientRects().length || img.complete);
+				if (main.classList.contains('first') && ready) main.classList.remove('loading', 'first');
+			}
+		</script>
 	</main>
 </Layout>
 
@@ -135,6 +147,11 @@ const projects = (await getCollection('projects'))
 	}
 	.picker-names {
 		transition: opacity 150ms ease-in 150ms;
+	}
+	/* The project showing with the page as it opens (the script's reveal()). */
+	.work.instant :global(.card),
+	.work.instant .picker-names {
+		transition: none;
 	}
 	/* A project's photos slide in from the right once it shows, one after another, and
 	   slip back out to the right as it goes. */
@@ -222,6 +239,8 @@ const projects = (await getCollection('projects'))
 </style>
 
 <script>
+	import { pageFadingIn } from '../lib/entrance';
+
 	// On desktop the page steps through the projects: a scroll (or the up and down arrows)
 	// slides the page to the next or previous one, and the one in place is chosen: the
 	// picker marks it and its photos slide in. The picker slides to a project too. The choice is kept in the address's hash,
@@ -253,7 +272,17 @@ const projects = (await getCollection('projects'))
 			);
 			clearTimeout(slow);
 		}
-		main.classList.remove('loading', 'first');
+		// The project fades in, unless this is the page opening and the page is still fading
+		// in itself (or there was nothing to wait for): then it shows along with the page.
+		const show = () => main.classList.remove('loading', 'first');
+		if (main.classList.contains('first') && (!pending.length || pageFadingIn())) {
+			main.classList.add('instant');
+			show();
+			void main.offsetWidth; // apply it before the fade comes back
+			main.classList.remove('instant');
+		} else {
+			show();
+		}
 		document.documentElement.classList.remove('slow');
 	}
 

@@ -25,10 +25,12 @@ interface Props {
 	links?: Record<string, string>;
 	/** Up to three photos from the project, scattered down the right edge (desktop). */
 	photos?: ImageMetadata[];
+	/** Load the cover at once (the project on screen when the page opens), not lazily. */
+	priority?: boolean;
 	class?: string;
 }
 
-const { id, heading, cover, href, subtitle, blurb, links = {}, photos = [], class: className } = Astro.props;
+const { id, heading, cover, href, subtitle, blurb, links = {}, photos = [], priority = false, class: className } = Astro.props;
 // A blank line starts a paragraph; *stars* italicise.
 const paragraphs = (blurb ?? '')
 	.split(/\n\s*\n/)
@@ -97,6 +99,8 @@ const unit = (px: number) => `calc(${px} * var(--u))`;
 				alt=""
 				widths={coverWidths}
 				sizes="(min-width: 980px) 640px, calc(100vw - 48px)"
+				loading={priority ? 'eager' : 'lazy'}
+				fetchpriority={priority ? 'high' : undefined}
 				class="block h-auto w-full"
 			/>
 			{external(href) && <LinkHint href={href!} plain />}

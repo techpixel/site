@@ -30,6 +30,11 @@
 		display: inline-block;
 		animation: bob 900ms ease-in-out infinite alternate;
 		animation-delay: calc(var(--i) * -110ms);
+		/* Held while hidden, so the page isn't running ten animations nobody sees. */
+		animation-play-state: paused;
+	}
+	:global(html.slow) .loading-text span {
+		animation-play-state: running;
 	}
 	@keyframes bob {
 		from {

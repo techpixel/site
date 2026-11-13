@@ -3,6 +3,7 @@
     // @ts-expect-error — warpjs ships no types
     import Warp from 'warpjs';
     import { sweepStart, SLIDE_FROM } from '../lib/sweep';
+    import { pageFadingIn, withoutTransition } from '../lib/entrance';
 
     type Mode = 'wave' | 'jelly' | 'tide' | 'flow' | 'none';
 
@@ -173,7 +174,7 @@
         reposition(points);
     }
 
-    onMount(() => {
+    function setup(): (() => void) | undefined {
         host.innerHTML = svg;
         const svgEl = host.querySelector('svg') as SVGSVGElement | null;
         if (!svgEl) return;
@@ -223,10 +224,15 @@
         // tag the host with `.warp-ready` so the parent stylesheet can fade
         // it in. Force a reflow + wait two frames so the browser actually
         // paints the initial `opacity: 0` state before the class flips —
-        // otherwise the transition is collapsed to a single frame and skipped.
+        // otherwise the transition is collapsed to a single frame and skipped. While the
+        // page itself is still fading in, it shows at once and fades in with the page.
         void host.offsetHeight;
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => host.classList.add('warp-ready'));
+            requestAnimationFrame(() => {
+                const ready = () => host.classList.add('warp-ready');
+                if (pageFadingIn()) withoutTransition(host, ready);
+                else ready();
+            });
         });
 
         let raf = 0;
@@ -389,6 +395,23 @@
         }
 
         return () => cancelAnimationFrame(raf);
+    }
+
+    onMount(() => {
+        // One that isn't rendered (display: none, e.g. the phone headline on desktop) waits
+        // until it is: building the warp is the costly part, and nothing of it would show.
+        if (typeof host.checkVisibility !== 'function' || host.checkVisibility()) return setup();
+        let cleanup: (() => void) | undefined;
+        const observer = new ResizeObserver(() => {
+            if (!host.checkVisibility()) return;
+            observer.disconnect();
+            cleanup = setup();
+        });
+        observer.observe(host);
+        return () => {
+            observer.disconnect();
+            cleanup?.();
+        };
     });
 </script>
 

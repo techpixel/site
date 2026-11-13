@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
+import { Font } from 'astro:assets';
 import SEO from '../components/SEO.astro';
 import Loading from '../components/Loading.astro';
 import type { Props as SEOProps } from '../components/SEO.astro';
@@ -26,6 +27,10 @@ const { class: className, ...seo } = Astro.props;
 		     The theme (dark unless the sidebar's sun button chose light) is set before the
 		     first paint and carried onto each swapped-in page. -->
 		<script is:inline>
+			// `js` lets the stylesheet hide what a script will replace (the plain portrait
+			// photo, before it is dithered) from the first paint, without hiding it from a
+			// visitor who has no JavaScript.
+			document.documentElement.classList.add('js');
 			try {
 				if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
 			} catch {}
@@ -34,6 +39,22 @@ const { class: className, ...seo } = Astro.props;
 			// shows "Loading..." (Figma 2542:2852), so a click never seems to do nothing.
 			// `slow` carries onto the new page, which clears it at once unless it is holding
 			// itself back (/work's main.loading, waiting on images; it clears it then).
+			// A link to the page already open (the current nav item, say) does nothing, rather
+			// than having the router load the page again and replay its fade and intro. In the
+			// capture phase, so it is settled before the router's own click handler looks.
+			document.addEventListener(
+				'click',
+				(e) => {
+					const link = e.target instanceof Element && e.target.closest('a[href]');
+					if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+					if (link.target && link.target !== '_self') return;
+					const to = new URL(link.href, location.href);
+					if (to.origin === location.origin && to.pathname === location.pathname && to.search === location.search && !to.hash) {
+						e.preventDefault();
+					}
+				},
+				true,
+			);
 			let leaving;
 			document.addEventListener('astro:before-preparation', () => {
 				clearTimeout(leaving);
@@ -42,7 +63,7 @@ const { class: className, ...seo } = Astro.props;
 			document.addEventListener('astro:before-swap', (e) => {
 				clearTimeout(leaving);
 				const html = e.newDocument.documentElement;
-				html.classList.add('page-transition');
+				html.classList.add('page-transition', 'js');
 				if (document.documentElement.classList.contains('slow')) html.classList.add('slow');
 				if (document.documentElement.dataset.theme) html.dataset.theme = document.documentElement.dataset.theme;
 			});
@@ -50,12 +71,10 @@ const { class: className, ...seo } = Astro.props;
 				if (!document.querySelector('main.loading')) document.documentElement.classList.remove('slow');
 			});
 		</script>
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&display=swap"
-			rel="stylesheet"
-		/>
+		<!-- Both styles preloaded (about 20 KB each; italics show above the fold on both
+		     pages), so the text doesn't paint in the fallback and then swap. -->
+		<Font cssVariable="--font-familjen-grotesk" preload />
+
 	</head>
 	<body class={className}>
 		<Loading />

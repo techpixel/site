@@ -41,9 +41,11 @@ const navLink =
 	</nav>
 
 	<!-- Diagonal stripe panel: 4px cream border, cream stripes on a 43.5px tile
-	     (same geometry as the Figma pattern) that slide slowly and loop seamlessly. -->
-	<div class="stripes hidden min-h-px w-full flex-1 border-4 border-cream md:block" aria-hidden="true">
-		<div class="stripes-fill size-full bg-cream"></div>
+	     (same geometry as the Figma pattern) that slide slowly and loop seamlessly. The fill
+	     is one tile wider than the panel and moved with a transform, so the slide runs on
+	     the compositor instead of repainting the panel every frame. -->
+	<div class="stripes hidden min-h-px w-full flex-1 overflow-clip border-4 border-cream md:block" aria-hidden="true">
+		<div class="stripes-fill h-full w-[calc(100%+43.5px)] bg-cream"></div>
 	</div>
 
 	<div class="relative hidden h-[111px] w-full shrink-0 overflow-clip bg-cream md:block">
@@ -156,13 +158,14 @@ const navLink =
 		mask-size: 43.5px 43.5px;
 		mask-repeat: repeat;
 		mask-position: 0 0;
+		translate: -43.5px 0;
 		animation: stripes-slide 10s linear infinite;
 	}
 
 	/* One full tile period per loop, so the wrap is invisible. */
 	@keyframes stripes-slide {
 		to {
-			mask-position: 43.5px 0;
+			translate: 0 0;
 		}
 	}
 
@@ -187,10 +190,12 @@ const navLink =
 	// Select the clicked item right away, while its hover fill is still showing, so it
 	// just turns solid (the router may move the sidebar before the pointer's hover state
 	// is re-read, which would otherwise make the fill sweep in a second time).
-	document.addEventListener('click', (e) => {
-		const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('.sidebar nav[aria-label="Primary"] a');
-		if (!link || link.target || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-		if (link.origin === location.origin) setCurrent(link);
+	// Only once the router has taken the click on (before-preparation fires in the click's
+	// own task): a click it hands to the browser as a full page load must not leave the
+	// item marked, or Back restores this page from the cache with the wrong item selected.
+	document.addEventListener('astro:before-preparation', (e) => {
+		const link = e.sourceElement?.closest<HTMLAnchorElement>('.sidebar nav[aria-label="Primary"] a');
+		if (link) setCurrent(link);
 	});
 
 	function markCurrent() {
@@ -266,5 +271,10 @@ const navLink =
 		syncToggle();
 		markCurrent();
 		syncStripes();
+	});
+	// A navigation that started but fell through to a full page load can still leave the
+	// clicked item marked; a page restored from the back/forward cache fires no page-load.
+	addEventListener('pageshow', (e) => {
+		if (e.persisted) markCurrent();
 	});
 </script>

@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, fontProviders } from 'astro/config';
 import svelte from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
 import seo from './src/data/seo.json' with { type: 'json' };
@@ -15,6 +15,17 @@ export default defineConfig({
 		prefetchAll: true,
 		defaultStrategy: 'viewport',
 	},
+	// Downloaded at build time and served from the site itself, so the first paint doesn't
+	// wait on Google's stylesheet and a second origin.
+	fonts: [
+		{
+			provider: fontProviders.google(),
+			name: 'Familjen Grotesk',
+			cssVariable: '--font-familjen-grotesk',
+			weights: ['400 700'],
+			styles: ['normal', 'italic'],
+		},
+	],
 	vite: {
 		plugins: [tailwindcss()],
 	},

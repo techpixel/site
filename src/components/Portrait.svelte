@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { flushSync, onMount } from 'svelte';
 	import { ditherBayer } from '../lib/dither';
 	import { sweepStart, SLIDE_FROM } from '../lib/sweep';
+	import { pageFadingIn, withoutTransition } from '../lib/entrance';
 
 	interface Props {
 		/** The photo in full tone; it is dithered here, on the screen's own pixels. */
@@ -69,7 +70,14 @@
 		let revealStart = 0;
 		let revealFrame = 0;
 		let final: ImageData | undefined;
-		let turns: Float32Array | undefined;
+		// The frame being built up, and the cells in order of their turn: `order` holds the
+		// cell indices sorted into TURN_STEPS buckets (`starts[b]` is where bucket b begins),
+		// so a frame only touches the cells whose turn has come since the last one.
+		let out: ImageData | undefined;
+		let order: Uint32Array | undefined;
+		let starts: Uint32Array | undefined;
+		let shown = 0;
+		const TURN_STEPS = 1024;
 		const SCATTER = 0.08;
 		const scatter = (x: number, y: number) => {
 			const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
@@ -77,14 +85,18 @@
 		};
 		const step = (now: number) => {
 			revealFrame = 0;
-			if (!final || !turns) return;
+			if (!final || !out || !order || !starts) return;
 			const p = Math.min(1, (now - revealStart) / reveal);
 			if (p >= 1) {
 				ctx.putImageData(final, 0, 0);
 				return;
 			}
-			const out = new ImageData(new Uint8ClampedArray(final.data), final.width, final.height);
-			for (let k = 0; k < turns.length; k++) if (turns[k] > p) out.data[k * 4 + 3] = 0;
+			// The buckets below p's: every cell whose turn has passed.
+			const upTo = starts[Math.floor(p * TURN_STEPS)];
+			for (; shown < upTo; shown++) {
+				const i = order[shown] * 4 + 3;
+				out.data[i] = final.data[i];
+			}
 			ctx.putImageData(out, 0, 0);
 			revealFrame = requestAnimationFrame(step);
 		};
@@ -108,7 +120,8 @@
 			if (ink) tint(pixels, color(ink), shade && color(shade));
 			if (revealing && (!revealStart || performance.now() - revealStart < reveal)) {
 				final = pixels;
-				turns = new Float32Array(cw * ch);
+				const buckets = new Uint16Array(cw * ch);
+				const counts = new Uint32Array(TURN_STEPS + 1);
 				for (let y = 0; y < ch; y++) {
 					for (let x = 0; x < cw; x++) {
 						// When the edge reaches the column, undoing Warp's quartic ease-out so
@@ -116,9 +129,22 @@
 						// the ease crawls at the end, where a spread in distance would hold a
 						// ragged band at the left edge for most of the reveal.
 						const edge = 1 - ((x + 1) / cw / SLIDE_FROM) ** 0.25;
-						turns[y * cw + x] = Math.min(1, edge + (scatter(x, y) - 0.5) * SCATTER);
+						const turn = Math.max(0, Math.min(1, edge + (scatter(x, y) - 0.5) * SCATTER));
+						const b = Math.min(TURN_STEPS, Math.floor(turn * TURN_STEPS));
+						buckets[y * cw + x] = b;
+						counts[b]++;
 					}
 				}
+				starts = new Uint32Array(TURN_STEPS + 2);
+				for (let b = 0; b <= TURN_STEPS; b++) starts[b + 1] = starts[b] + counts[b];
+				const fill = starts.slice(0, TURN_STEPS + 1);
+				order = new Uint32Array(cw * ch);
+				for (let k = 0; k < buckets.length; k++) order[fill[buckets[k]]++] = k;
+				// Every cell starts clear; step() copies each one's alpha in on its turn.
+				const data = new Uint8ClampedArray(pixels.data);
+				for (let i = 3; i < data.length; i += 4) data[i] = 0;
+				out = new ImageData(data, cw, ch);
+				shown = 0;
 				if (!revealStart) revealStart = sweepStart(canvas);
 				ctx.clearRect(0, 0, cw, ch);
 				if (!revealFrame) revealFrame = requestAnimationFrame(step);
@@ -126,6 +152,8 @@
 				ctx.putImageData(pixels, 0, 0);
 			}
 			if (toned && ink && shade) tone(toned, color(ink), color(shade));
+			// The first drawing fades in, unless the page is still fading in around it.
+			if (!drawn && pageFadingIn()) withoutTransition(canvas, () => flushSync(() => (drawn = true)));
 			drawn = true;
 		};
 		// The peek: the photo at the screen's full density, each pixel's luma (as the dither
@@ -227,7 +255,8 @@
 	decoding="async"
 	loading="eager"
 	class="absolute inset-0 size-full object-cover transition-opacity"
-	class:opacity-0={(drawn && !(peeking && !duotone)) || (ink && !shade)}
+	class:opacity-0={ink && !shade}
+	class:plain-hidden={!(drawn && peeking && !duotone)}
 />
 {#if duotone}
 	<canvas
@@ -240,9 +269,16 @@
 <canvas
 	bind:this={canvas}
 	class="absolute inset-0 size-full transition-opacity [image-rendering:pixelated]"
-	class:invisible={!drawn}
-	class:opacity-0={peeking}
+	class:opacity-0={!drawn || peeking}
 	aria-hidden="true"
 	onpointerenter={peek ? () => (peeking = true) : undefined}
 	onpointerleave={peek ? () => (peeking = false) : undefined}
 ></canvas>
+
+<style>
+	/* With JavaScript the plain photo only feeds the canvas, so it is hidden from the first
+	   paint (html.js, set in Layout.astro) rather than showing until the dithering is done. */
+	:global(html.js) img.plain-hidden {
+		opacity: 0;
+	}
+</style>
