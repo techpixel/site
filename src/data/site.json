@@ -1,7 +1,9 @@
 {
   "socials": [
     { "id": "linkedin", "label": "LinkedIn", "href": "https://www.linkedin.com/in/manitej-boorgu-739370232" },
-    { "id": "github", "label": "GitHub", "href": "https://github.com/techpixel" }
+    { "id": "github", "label": "GitHub", "href": "https://github.com/techpixel" },
+    { "id": "x", "label": "X", "href": "https://x.com/manitejb" },
+    { "id": "arena", "label": "Are.na", "href": "https://www.are.na/manitej-b" }
   ],
   "song": {
     "label": "this year’s song",
