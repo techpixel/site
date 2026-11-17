@@ -132,7 +132,8 @@
 
 - id: sketch-intent
   name: Sketch Intent
-  time: ""
+  time: 2026, CalHacks
+  section: personal
   links:
     github: https://github.com/techpixel/sketchintent
   subtitle: CalHacks Project (2026)
