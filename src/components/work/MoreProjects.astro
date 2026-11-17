@@ -1,0 +1,70 @@
+---
+import linkArrow from '../../assets/figma/icon-link-arrow.svg?url';
+import LinkHint from '../LinkHint.astro';
+
+/**
+ * /work's last stop, "more projects" (Figma 2608:826): the smaller projects (YAML
+ * `section` personal, then older) as outlined boxes, two to a row on desktop: "name
+ * (time)", the blurb, and the links at the foot. Like a project it fills a screen, so
+ * the page's snapping and the picker treat it as one more.
+ */
+interface Props {
+	projects: {
+		id: string;
+		name: string;
+		time: string;
+		blurb?: string;
+		links: Record<string, string>;
+	}[];
+}
+
+const { projects } = Astro.props;
+
+// Figma's spelling where it has one; any other key shows as written.
+const LABELS: Record<string, string> = { website: 'Website', demo: 'Demo', github: 'Github', itch: 'itch.io' };
+const order = Object.keys(LABELS);
+const rank = (key: string) => order.indexOf(key) + 1 || order.length + 1;
+const linkList = (links: Record<string, string>) =>
+	Object.entries(links)
+		.sort(([a], [b]) => rank(a) - rank(b))
+		.map(([key, url]) => ({ label: LABELS[key] ?? key, url }));
+---
+
+<!-- On phones it is the pager's last page, scrolling up and down inside itself. -->
+<li id="more" class="card more flex w-full shrink-0 snap-start snap-always flex-col gap-6 overflow-y-auto px-6 [scrollbar-width:none] md:overflow-visible md:px-0 md:pb-[31.5px] md:min-h-[max(640px,calc(100vh-48px))] md:w-[min(926px,calc(100vw-364px))]">
+	<h2 class="text-2xl font-bold text-white md:sr-only">More projects</h2>
+	<ul class="grid gap-4 md:grid-cols-2 md:gap-x-6 md:gap-y-[30px]">
+		{
+			projects.map((p) => {
+				const links = linkList(p.links);
+				return (
+					<li class="flex flex-col items-start border-[1.531px] border-cream p-4 md:min-h-[211px] md:p-[15.84px] md:pb-[19px]">
+						<h3 class="text-xl font-bold text-white md:text-[24.5px]">
+							{p.name}
+							{p.time && ` (${p.time})`}
+						</h3>
+						{p.blurb && <p class="mt-3 max-w-[347.6px] text-base text-cream md:mt-[15px] md:text-[18.374px]">{p.blurb}</p>}
+						{links.length > 0 && (
+							<ul class="mt-auto flex flex-wrap gap-x-4 pt-6 text-base md:text-[18.374px]">
+								{links.map((l) => (
+									<li>
+										<a
+											href={l.url}
+											target="_blank"
+											rel="noopener"
+											class="has-hint flex items-center gap-[0.25em] whitespace-nowrap text-link transition-colors hover:text-link-hover"
+										>
+											{l.label}
+											<span class="icon h-[0.83em] w-[0.46em] shrink-0" style={`--icon: url("${linkArrow}")`} aria-hidden="true" />
+											<LinkHint href={l.url} plain />
+										</a>
+									</li>
+								))}
+							</ul>
+						)}
+					</li>
+				);
+			})
+		}
+	</ul>
+</li>

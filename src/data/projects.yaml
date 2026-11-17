@@ -5,7 +5,9 @@
 #   tags:    pills (no longer shown on /work, which has `subtitle` instead)
 #   subtitle: the card's italic line under the title
 #   blurb:   the card's text; a blank line starts a new paragraph
-#   section: personal → listed on /projects; older → its "Older Projects" group
+#   section: personal → listed on /projects; older → its "Older Projects" group. Both show
+#            in /work's "more projects" grid as "name (time)", the blurb, and the links
+#            (else href, labelled by its site); entries with no links are left out
 #   name, time, href: how /projects lists an entry (the name links to href)
 #   links:   website → where the card links (else href); every link shows at the card's foot
 #            (portfolio → its writeup on portfolio.manitej.com/work/<id>, where one exists)
@@ -148,40 +150,52 @@
   name: Hero
   time: 2026, In Development
   section: personal
+  blurb: A node-based shader editor in the browser, with a live preview on every node.
   href: https://github.com/techpixel/hero
 
 - id: gitgirl
   name: GitGirl
   time: "2026"
   section: personal
+  blurb: A command line tool for managing lots of git repositories at once.
   href: https://github.com/techpixel/gitgirl
 
 - id: how-to-not-kill-people
   name: How to Not Kill People
   time: 2026, Minijam
   section: personal
+  blurb: Received a weapon of mass destruction? Learn how to avoid unnecessary casualties.
   href: https://techpixel.itch.io/how-to-not-kill-people
+
+- id: boreal-lights
+  name: Boreal Lights
+  time: "2024"
+  section: personal
 
 - id: this-website
   name: This website!
   time: 2022-2026
   section: personal
+  blurb: The (new) home of manitej.com, rebuilt a few times over.
   href: https://github.com/techpixel/site
 
 - id: homebridge-repl
   name: Homebridge-Repl
   time: "2022"
   section: older
+  blurb: Control your repls from HomeKit, with Siri and Shortcuts.
   href: https://github.com/techpixel/homebridge-repl
 
 - id: replcraft-jarci
   name: Replcraft JARCI
   time: "2022"
   section: older
+  blurb: Just Another Replcraft Implementation (in Python!)
   href: https://github.com/techpixel/replcraft-jarci
 
 - id: zala
   name: Zala
   time: "2020"
   section: older
+  blurb: A programming language made to learn about programming languages.
   href: https://github.com/techpixel/Zala
