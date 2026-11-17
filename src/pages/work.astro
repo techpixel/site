@@ -20,6 +20,15 @@ for (const [path, mod] of Object.entries(
 	(photos[path.split('/').at(-2)!] ??= []).push(mod.default);
 }
 
+// Posters from a project, src/assets/posters/<project id>/<n>.webp, in file name order:
+// shown most of the window's height beside it (desktop), fanned out if there are several.
+const posters: Record<string, ImageMetadata[]> = {};
+for (const [path, mod] of Object.entries(
+	import.meta.glob<{ default: ImageMetadata }>('../assets/posters/*/*.webp', { eager: true }),
+).sort(([a], [b]) => a.localeCompare(b))) {
+	(posters[path.split('/').at(-2)!] ??= []).push(mod.default);
+}
+
 // Every project with a cover, in the YAML's order.
 const projects = (await getCollection('projects'))
 	.sort((a, b) => a.data.order - b.data.order)
@@ -92,6 +101,7 @@ const projects = (await getCollection('projects'))
 							blurb={p.data.blurb}
 							links={p.data.links}
 							photos={photos[p.id]}
+							posters={posters[p.id]}
 						/>
 					))
 				}
@@ -163,6 +173,12 @@ const projects = (await getCollection('projects'))
 	.work.loading :global(.card.chosen .photo) {
 		translate: calc(100% + 120px) 0;
 		transition: translate 300ms ease-in;
+	}
+	/* Posters stand away from the window's right edge, so they go by their distance from
+	   it (--left, from ProjectCard) rather than their own width. */
+	.work :global(.card:not(.chosen) .poster),
+	.work.loading :global(.card.chosen .poster) {
+		translate: calc(100vw - var(--left) + 120px) 0;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.work :global(.photo) {

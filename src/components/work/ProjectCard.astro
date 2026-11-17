@@ -25,12 +25,14 @@ interface Props {
 	links?: Record<string, string>;
 	/** Up to three photos from the project, scattered down the right edge (desktop). */
 	photos?: ImageMetadata[];
+	/** Posters from the project, most of the window's height to the right of the card (desktop). */
+	posters?: ImageMetadata[];
 	/** Load the cover at once (the project on screen when the page opens), not lazily. */
 	priority?: boolean;
 	class?: string;
 }
 
-const { id, heading, cover, href, subtitle, blurb, links = {}, photos = [], priority = false, class: className } = Astro.props;
+const { id, heading, cover, href, subtitle, blurb, links = {}, photos = [], posters = [], priority = false, class: className } = Astro.props;
 // A blank line starts a paragraph; *stars* italicise.
 const paragraphs = (blurb ?? '')
 	.split(/\n\s*\n/)
@@ -85,6 +87,35 @@ const stackHeight = Math.max(...frames.map((f) => f.extent[1])) - stackTop;
 // whichever of their width and height is the tighter fit (never down, below that).
 const PHOTO_UNIT = 'max(1px, min(100vw / 1440, 100vh / 900))';
 const unit = (px: number) => `calc(${px} * var(--u))`;
+
+// The posters stand most of the window's height (POSTER_SCALE of it, less 36px top and
+// bottom: the sidebar's 24px plus room for their tilt), centred top to bottom. Several
+// fan out to the right, each overlapping the one before (which sits on top) by
+// 1 - POSTER_STEP of its width, tilting alternately. The group is centred in the space
+// right of the card, whose right edge is at 980px on desktop; where that space is too
+// narrow it keeps POSTER_GAP from the card and runs off the window's right edge
+// instead, as the photos do. The first one's tilt swings a left corner towards the card
+// (by `posterTilt`), so the gap is measured from there. All share the first one's shape.
+// A fan stands just as tall but bleeds off the window's right edge instead, its last
+// poster POSTER_BLEED of its width past it (unless that would bring the fan nearer the
+// card than POSTER_GAP). Posters are framed like the photos, in a black border.
+const POSTER_TILTS = [1.5, -2.5, 2];
+const POSTER_SCALE = 0.88;
+const FAN_SCALE = 0.76; // a fan's posters stand a little shorter
+const POSTER_GAP = 72;
+const POSTER_STEP = 0.8;
+const POSTER_BLEED = 0.3;
+const posterRatio = posters[0] ? posters[0].width / posters[0].height : 1;
+const groupSpan = 1 + POSTER_STEP * (posters.length - 1);
+const posterHeight = `(100vh - 72px) * ${posters.length > 1 ? FAN_SCALE : POSTER_SCALE}`;
+const posterWidth = `${posterHeight} * ${posterRatio.toFixed(4)}`;
+const posterTilt = `${posterHeight} * ${(Math.sin((Math.abs(POSTER_TILTS[0]) * Math.PI) / 180) / 2).toFixed(4)}`;
+const groupWidth = `${posterWidth} * ${groupSpan.toFixed(4)}`;
+const posterPlace =
+	posters.length > 1
+		? `calc(100vw - ${groupWidth} + ${posterWidth} * ${POSTER_BLEED})`
+		: `calc(980px + (100vw - 980px - ${groupWidth}) / 2)`;
+const posterLeft = `max(calc(980px + ${POSTER_GAP}px + ${posterTilt}), ${posterPlace})`;
 ---
 
 <li id={id} class:list={['card flex w-full flex-col items-start gap-6 md:min-h-[max(640px,calc(100vh-48px))] md:pb-7', className]}>
@@ -182,6 +213,24 @@ const unit = (px: number) => `calc(${px} * var(--u))`;
 						/>
 					);
 				})}
+			</div>
+		)
+	}
+
+	{
+		posters.length > 0 && (
+			<div class="hidden min-[1402px]:block" aria-hidden="true">
+				{posters.map((poster, i) => (
+					<Image
+						src={poster}
+						alt=""
+						widths={[400, 600, 800, 1100, 1400].filter((w) => w < poster.width).concat(poster.width)}
+						sizes={`calc(${posterWidth})`}
+						loading="eager"
+						class="poster photo fixed border-black object-cover"
+						style={`top: calc((100vh - ${posterHeight}) / 2); height: calc(${posterHeight}); width: calc(${posterWidth}); --left: calc(${posterLeft} + ${posterWidth} * ${POSTER_STEP * i}); left: var(--left); rotate: ${POSTER_TILTS[i % POSTER_TILTS.length]}deg; z-index: ${posters.length - i}; --n: ${i}; --u: ${PHOTO_UNIT}; border-width: ${unit(4)}`}
+					/>
+				))}
 			</div>
 		)
 	}

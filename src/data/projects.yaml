@@ -61,32 +61,6 @@
   blurb: >-
     Arcade was Hack Club’s first general YSWS program, ran in partnership with GitHub. Reached 10000+ teens globally and awarded $400,000 in grants and prizes.
 
-- id: warp
-  name: Warp
-  time: ""
-  links:
-    github: https://github.com/techpixel/warp
-  cover: warp
-  tags: [Engineering, Design]
-  blurb: >-
-    Warp is a silly little design utility that allows creating deformed (dare I say warped?)
-    vectors via. MVC and Green transformation functions.
-
-- id: manifesto
-  name: Manifesto
-  time: HC 2026
-  title: Designer
-  links:
-    github: https://github.com/hackclub/manifesto
-    website: https://manifesto.hackclub.com
-    portfolio: https://portfolio.manitej.com/work/manifesto
-  heading: Hack Club Manifesto
-  subtitle: Hack Club Gap Year Project (2026)
-  cover: manifesto
-  tags: [Storytelling]
-  blurb: >-
-    Made in 2 days, Manifesto is a love letter to Hack Club and a serious yet friendly invitation to apply to the Hack Club Gap Year Program. ~1,000 people applied.
-
 - id: bloom
   name: Bloom
   time: ""
@@ -113,6 +87,32 @@
   tags: [Infrastructure, Engineering]
   blurb: >-
     Campfire was an in-person game jam that took place in 200+ cities across the globe ran in partnership with Open Sauce. 18,000+ teenagers participated.
+
+- id: warp
+  name: Warp
+  time: ""
+  links:
+    github: https://github.com/techpixel/warp
+  cover: warp
+  tags: [Engineering, Design]
+  blurb: >-
+    Warp is a silly little design utility that allows creating deformed (dare I say warped?)
+    vectors via. MVC and Green transformation functions.
+
+- id: manifesto
+  name: Manifesto
+  time: HC 2026
+  title: Designer
+  links:
+    github: https://github.com/hackclub/manifesto
+    website: https://manifesto.hackclub.com
+    portfolio: https://portfolio.manitej.com/work/manifesto
+  heading: Hack Club Manifesto
+  subtitle: Hack Club Gap Year Project (2026)
+  cover: manifesto
+  tags: [Storytelling]
+  blurb: >-
+    Made in 2 days, Manifesto is a love letter to Hack Club and a serious yet friendly invitation to apply to the Hack Club Gap Year Program. ~1,000 people applied.
 
 - id: orchard
   name: Orchard
