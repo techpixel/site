@@ -70,6 +70,8 @@
 	let toned: HTMLCanvasElement | undefined = $state();
 	let drawn = $state(false);
 	let peeking = $state(false);
+	let wavePeek = $state(false);
+	let triggerPeek: ((enter: boolean, e: PointerEvent) => void) | undefined;
 	const duotone = $derived(peek && !!ink && !!shade);
 
 	onMount(() => {
@@ -79,7 +81,15 @@
 		// The canvas in device pixels.
 		let w = 0;
 		let h = 0;
+		let cw = 0;
+		let ch = 0;
 		let frame = 0;
+		let basePixels: ImageData | undefined;
+		let peekFrame = 0;
+		let peekStart = 0;
+		let peekTo = false;
+		let peekOx = 0;
+		let peekOy = 0;
 
 		// The reveal: each cell gets a turn, the progress at which Warp's sliding shape (its
 		// left edge SLIDE_FROM widths out at the start) reaches the cell's column, give or take
@@ -125,13 +135,80 @@
 			revealFrame = requestAnimationFrame(step);
 		};
 
+		const stepPeek = (now: number) => {
+			peekFrame = 0;
+			if (!basePixels || !cw || !ch) return;
+			const DURATION = 500;
+			const rawT = Math.min(1, (now - peekStart) / DURATION);
+			if (rawT >= 1) {
+				if (peekTo) ctx.clearRect(0, 0, cw, ch);
+				else ctx.putImageData(basePixels, 0, 0);
+				return;
+			}
+			const eased = 1 - (1 - rawT) ** 2.3;
+			const PEEK_SCATTER = 0.12;
+			const PEEK_CHECKER = 0.08;
+			const PEEK_SPAN = 1 + PEEK_SCATTER + PEEK_CHECKER;
+			const pos = eased * PEEK_SPAN;
+			const maxDist =
+				Math.max(
+					Math.hypot(peekOx, peekOy),
+					Math.hypot(cw - peekOx, peekOy),
+					Math.hypot(peekOx, ch - peekOy),
+					Math.hypot(cw - peekOx, ch - peekOy),
+				) || 1;
+			const srcData = basePixels.data;
+			const frameOut = ctx.createImageData(cw, ch);
+			const { data } = frameOut;
+			for (let y = 0; y < ch; y++) {
+				const ty = y >> 2;
+				for (let x = 0; x < cw; x++) {
+					const tx = x >> 2;
+					const p = y * cw + x;
+					const dist = Math.hypot(x - peekOx, y - peekOy) / maxDist;
+					const turn = dist + (scatter(tx, ty) - 0.5) * PEEK_SCATTER + ((x + y) & 1 ? PEEK_CHECKER : 0);
+					const showDither = peekTo ? pos < turn : pos >= turn;
+					if (showDither) {
+						const i = p * 4;
+						data[i] = srcData[i];
+						data[i + 1] = srcData[i + 1];
+						data[i + 2] = srcData[i + 2];
+						data[i + 3] = srcData[i + 3];
+					}
+				}
+			}
+			ctx.putImageData(frameOut, 0, 0);
+			peekFrame = requestAnimationFrame(stepPeek);
+		};
+
+		triggerPeek = (enter: boolean, e: PointerEvent) => {
+			peeking = enter;
+			if (!basePixels || !cw || !ch || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+				wavePeek = false;
+				return;
+			}
+			wavePeek = true;
+			const rect = canvas.getBoundingClientRect();
+			if (rect.width > 0 && rect.height > 0) {
+				peekOx = Math.max(0, Math.min(cw, ((e.clientX - rect.left) / rect.width) * cw));
+				peekOy = Math.max(0, Math.min(ch, ((e.clientY - rect.top) / rect.height) * ch));
+			} else {
+				peekOx = cw / 2;
+				peekOy = ch / 2;
+			}
+			peekTo = enter;
+			peekStart = performance.now();
+			if (peekFrame) cancelAnimationFrame(peekFrame);
+			peekFrame = requestAnimationFrame(stepPeek);
+		};
+
 		const draw = () => {
 			frame = 0;
 			if (!w || !h || !img.complete || !img.naturalWidth) return;
 			// With tiles, a canvas pixel is one cell of a tile, a whole number of device pixels.
 			const px = tile ? Math.max(1, Math.round((tile / TILE_CELLS) * devicePixelRatio)) : cell;
-			const cw = Math.max(1, Math.round(w / px));
-			const ch = Math.max(1, Math.round(h / px));
+			cw = Math.max(1, Math.round(w / px));
+			ch = Math.max(1, Math.round(h / px));
 			canvas.width = cw;
 			canvas.height = ch;
 			ctx.imageSmoothingEnabled = true;
@@ -150,6 +227,7 @@
 				ditherBayer(pixels);
 				if (ink) tint(pixels, color(ink), shade && color(shade));
 			}
+			basePixels = pixels;
 			if (revealing && (!revealStart || performance.now() - revealStart < reveal * SPAN)) {
 				final = pixels;
 				const buckets = new Uint16Array(cw * ch);
@@ -293,6 +371,7 @@
 			img.removeEventListener('load', schedule);
 			cancelAnimationFrame(frame);
 			cancelAnimationFrame(revealFrame);
+			cancelAnimationFrame(peekFrame);
 		};
 	});
 </script>
@@ -313,17 +392,17 @@
 	<canvas
 		bind:this={toned}
 		class="absolute inset-0 size-full transition-opacity"
-		class:opacity-0={!peeking}
+		class:opacity-0={!drawn}
 		aria-hidden="true"
 	></canvas>
 {/if}
 <canvas
 	bind:this={canvas}
 	class="absolute inset-0 size-full transition-opacity [image-rendering:pixelated]"
-	class:opacity-0={!drawn || peeking}
+	class:opacity-0={!drawn || (peeking && !wavePeek)}
 	aria-hidden="true"
-	onpointerenter={peek ? () => (peeking = true) : undefined}
-	onpointerleave={peek ? () => (peeking = false) : undefined}
+	onpointerenter={peek ? (e) => triggerPeek?.(true, e) : undefined}
+	onpointerleave={peek ? (e) => triggerPeek?.(false, e) : undefined}
 ></canvas>
 
 <style>
