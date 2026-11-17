@@ -36,7 +36,7 @@ const projects = (await getCollection('projects'))
 ---
 
 <Layout title="work" description="stuff i've done">
-	<main class="work relative min-h-screen bg-black">
+	<main class="work relative bg-black md:min-h-screen">
 		<!-- Desktop holds the project back until its images have loaded (the script below
 		     shows it). Set here, before the first paint, so it never shows half-loaded; a
 		     safety timer lets it through if the script never runs. -->
@@ -52,7 +52,7 @@ const projects = (await getCollection('projects'))
 				}, 10000);
 			}
 		</script>
-		<div class="relative z-10 flex min-h-screen flex-col px-6 pt-[34px] pb-[30px] md:min-h-0 md:flex-row md:items-start md:gap-6 md:p-6">
+		<div class="relative z-10 flex h-dvh flex-col px-6 pt-6 pb-[calc(var(--mobile-bar)+21px)] md:h-auto md:min-h-0 md:flex-row md:items-start md:gap-6 md:p-6">
 			<Sidebar current="work" />
 
 			<!-- Figma 2476:1062 (light 2512:1242): the sidebar, then the project picker, then one
@@ -87,7 +87,10 @@ const projects = (await getCollection('projects'))
 				<div class="picker-dots mb-[7.5px] min-h-0 flex-1 bg-cream" aria-hidden="true"></div>
 			</nav>
 
-			<ul class="flex w-full flex-col gap-10 md:w-[640px] md:min-w-0 md:shrink md:gap-12">
+			<!-- Phones (Figma 2573:382): one project a screen, swiped sideways (native scroll
+			     snapping, edge to edge so the next one slides in from off screen), with a row
+			     of dots under it marking which. Desktop stacks them for the page scroll. -->
+			<ul class="projects -mx-6 flex w-[calc(100%+48px)] min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain md:mx-0 md:w-[640px] md:min-w-0 md:flex-none md:shrink md:snap-none md:flex-col md:gap-12 md:overflow-visible">
 				{
 					projects.map((p, i) => (
 						<ProjectCard
@@ -106,6 +109,22 @@ const projects = (await getCollection('projects'))
 					))
 				}
 			</ul>
+
+			<!-- Figma 2602:825: 8px squares 16px apart, the current one cream, the rest dimmed. -->
+			<nav class="pager mt-[21px] flex justify-center md:hidden" aria-label="Work">
+				{
+					projects.map((p, i) => (
+						<a
+							href={`#${p.id}`}
+							aria-label={p.data.name}
+							aria-current={i === 0 ? 'true' : undefined}
+							class="pager-dot flex size-4 items-center justify-center"
+						>
+							<span class="size-2 transition-colors duration-200" />
+						</a>
+					))
+				}
+			</nav>
 		</div>
 		<!-- Right after the projects, still before the first paint: if the project opening is
 		     already loaded (cached, or back on a page change), there is nothing to wait for,
@@ -138,6 +157,29 @@ const projects = (await getCollection('projects'))
 			scroll-snap-align: start;
 			scroll-margin-top: 24px;
 			transition: opacity 150ms ease-in;
+		}
+	}
+
+	/* Phones swipe through the projects; no scrollbar under them. */
+	.projects {
+		scrollbar-width: none;
+	}
+	.projects::-webkit-scrollbar {
+		display: none;
+	}
+	.pager-dot span {
+		background: color-mix(in srgb, var(--color-cream) 63%, var(--color-black));
+	}
+	.pager-dot[aria-current] span {
+		background: var(--color-cream);
+	}
+	/* Phones get exactly one screen, never a scroll: the project takes what the dots and
+	   the sidebar pinned under them leave (its cover shrinks to make room, see
+	   ProjectCard). The dots sit 37px above the sidebar's nav. */
+	@media (max-width: 979.98px) {
+		:global(html:has(main.work)),
+		:global(html:has(main.work) body) {
+			min-height: 0;
 		}
 	}
 
@@ -308,7 +350,9 @@ const projects = (await getCollection('projects'))
 		const links = [...document.querySelectorAll<HTMLAnchorElement>('.work .picker-link')];
 		if (!all[i] || i === chosen()) return;
 		all.forEach((card, k) => card.classList.toggle('chosen', k === i));
-		links.forEach((a, k) => (k === i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+		const dots = [...document.querySelectorAll<HTMLAnchorElement>('.work .pager-dot')];
+		for (const list of [links, dots])
+			list.forEach((a, k) => (k === i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
 		history.replaceState(history.state, '', `#${all[i].id}`);
 	};
 
@@ -395,7 +439,8 @@ const projects = (await getCollection('projects'))
 	let peak = 0; // the largest event since the step
 	let low = Infinity; // the smallest since that peak
 	function onWheel(e: WheelEvent) {
-		if (!desktop.matches || e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+		if (!desktop.matches) return onPagerWheel(e);
+		if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
 		const dir = Math.sign(e.deltaY);
 		const card = cards()[chosen()];
 		const rect = card?.getBoundingClientRect();
@@ -466,7 +511,69 @@ const projects = (await getCollection('projects'))
 		document.querySelector('.work')?.classList.remove('fading');
 	}
 
+	// Phones: the dots follow the sideways scroll, and a tap on one slides there.
+	const pager = () => document.querySelector<HTMLElement>('.work .projects');
+	function onSwipe() {
+		const ul = pager();
+		if (!ul || desktop.matches) return;
+		choose(Math.round(ul.scrollLeft / ul.clientWidth));
+	}
+
+	// A mouse wheel or an up-and-down trackpad scroll (a narrow window on a computer) has
+	// nothing to scroll here, so it steps the pager instead: one project per gesture, by
+	// the same rules as desktop's onWheel (QUIET, THRESHOLD), the slide itself left to
+	// the browser's smooth scroll and snapping. Sideways scrolls are left alone.
+	let pagerLast = 0;
+	let pagerTravel = 0;
+	let pagerStepped = false;
+	let pagerTarget = -1;
+	function onPagerWheel(e: WheelEvent) {
+		const ul = pager();
+		if (!ul || e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+		e.preventDefault();
+		const now = performance.now();
+		if (now - pagerLast > QUIET) {
+			pagerStepped = false;
+			pagerTravel = 0;
+		}
+		pagerLast = now;
+		if (pagerStepped) return;
+		pagerTravel += e.deltaMode ? THRESHOLD : Math.abs(e.deltaY);
+		if (pagerTravel < THRESHOLD) return;
+		pagerStepped = true;
+		const width = ul.clientWidth;
+		// Carry on from where a slide still under way is headed.
+		const from = pagerTarget >= 0 && Math.abs(ul.scrollLeft - pagerTarget * width) > 1 ? pagerTarget : Math.round(ul.scrollLeft / width);
+		pagerTarget = Math.min(Math.max(from + Math.sign(e.deltaY), 0), ul.children.length - 1);
+		ul.scrollTo({ left: pagerTarget * width, behavior: reduced() ? 'instant' : 'smooth' });
+	}
+
+	// A resize (or turning the phone) keeps the pager on its project, never between two.
+	function onResize() {
+		const ul = pager();
+		if (!ul || desktop.matches) return;
+		ul.scrollLeft = Math.max(chosen(), 0) * ul.clientWidth;
+	}
+	// Crossing the breakpoint keeps the same project in view, either way.
+	function onBreakpoint() {
+		const i = Math.max(chosen(), 0);
+		if (desktop.matches) {
+			scrollTo(0, i ? scrollY + cards()[i].getBoundingClientRect().top - 24 : 0);
+			onScroll();
+		} else {
+			onResize();
+		}
+	}
+
 	function onClick(e: MouseEvent) {
+		const dot = (e.target as Element | null)?.closest<HTMLAnchorElement>('.work .pager-dot');
+		if (dot) {
+			e.preventDefault();
+			const ul = pager();
+			const i = [...document.querySelectorAll('.work .pager-dot')].indexOf(dot);
+			ul?.scrollTo({ left: i * ul.clientWidth, behavior: reduced() ? 'instant' : 'smooth' });
+			return;
+		}
 		const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('.work .picker-link');
 		if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 		e.preventDefault();
@@ -493,17 +600,26 @@ const projects = (await getCollection('projects'))
 			if (fromHash > 0) cards()[fromHash].scrollIntoView();
 			onScroll();
 			reveal(cards()[Math.max(fromHash, 0)]);
+		} else if (fromHash > 0) {
+			const ul = pager()!;
+			ul.scrollLeft = fromHash * ul.clientWidth;
+			onSwipe();
 		}
+		pager()?.addEventListener('scroll', onSwipe, { passive: true });
 		addEventListener('click', onClick, true); // before the router, which would jump to the hash
 		addEventListener('keydown', onKey);
 		addEventListener('scroll', onScroll, { passive: true });
 		addEventListener('wheel', onWheel, { passive: false });
+		addEventListener('resize', onResize);
+		desktop.addEventListener('change', onBreakpoint);
 	});
 	document.addEventListener('astro:before-swap', () => {
 		removeEventListener('click', onClick, true);
 		removeEventListener('keydown', onKey);
 		removeEventListener('scroll', onScroll);
 		removeEventListener('wheel', onWheel);
+		removeEventListener('resize', onResize);
+		desktop.removeEventListener('change', onBreakpoint);
 		cancelAnimationFrame(slide);
 		slide = 0;
 		document.documentElement.classList.remove('sliding');

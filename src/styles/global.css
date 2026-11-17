@@ -65,6 +65,9 @@ body {
 	background: var(--color-ink);
 	color: var(--color-cream);
 	font-family: var(--font-body);
+	/* The height of the sidebar pinned to the foot of the screen on phones (Sidebar.astro):
+	   16px above, 88px of toggle and socials, 24px below. */
+	--mobile-bar: 128px;
 	/* The dark that sits on cream in the sidebar; /work overrides it with black. */
 	--sidebar-ink: var(--color-ink);
 	/* Figma text uses the font's natural leading, not Tailwind's 1.5 default. */

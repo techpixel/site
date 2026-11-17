@@ -118,10 +118,11 @@ const posterPlace =
 const posterLeft = `max(calc(980px + ${POSTER_GAP}px + ${posterTilt}), ${posterPlace})`;
 ---
 
-<li id={id} class:list={['card flex w-full flex-col items-start gap-6 md:min-h-[max(640px,calc(100vh-48px))] md:pb-7', className]}>
-	<div class="flex w-full flex-col items-start gap-[10px] md:gap-4">
-		<!-- The cover repeats the title's link, so it stays out of the tab order. -->
-		<Link {...linkProps} tabindex={href ? -1 : undefined} aria-hidden={href ? 'true' : undefined} class:list={['cover-link block w-full', { 'has-hint': external(href) }]}>
+<li id={id} class:list={['card flex w-full shrink-0 snap-start snap-always flex-col items-start gap-6 overflow-y-auto px-6 [scrollbar-width:none] md:overflow-visible md:min-h-[max(640px,calc(100vh-48px))] md:px-0 md:pb-7', className]}>
+	<div class="flex min-h-0 w-full flex-col items-start gap-[9.2px] md:gap-4">
+		<!-- The cover repeats the title's link, so it stays out of the tab order. On phones it
+		     gives up height (whole, never cropped) when the project needs more of the screen. -->
+		<Link {...linkProps} tabindex={href ? -1 : undefined} aria-hidden={href ? 'true' : undefined} class:list={['cover-link block min-h-24 w-full md:min-h-0', { 'has-hint': external(href) }]}>
 			<!-- Covers are Figma's renders of the cover frames (the 4K set, section 2530:774, is
 			     1920×1240: 3× the desktop width), offered at 1×, 2× and 3× so sharp screens
 			     get a sharp one. -->
@@ -132,18 +133,18 @@ const posterLeft = `max(calc(980px + ${POSTER_GAP}px + ${posterTilt}), ${posterP
 				sizes="(min-width: 980px) 640px, calc(100vw - 48px)"
 				loading={priority ? 'eager' : 'lazy'}
 				fetchpriority={priority ? 'high' : undefined}
-				class="block h-auto w-full"
+				class="block h-full w-auto max-w-full object-contain object-left-top md:h-auto md:w-full"
 			/>
 			{external(href) && <LinkHint href={href!} plain />}
 		</Link>
-		<div class="flex w-full flex-col items-start gap-[10px] md:gap-2">
-			<h2 class="text-2xl font-bold text-white md:text-[29.79px]">
+		<div class="flex w-full shrink-0 flex-col items-start gap-[4.6px] md:gap-2">
+			<h2 class="text-[27.21px] font-bold text-white md:text-[29.79px]">
 				<!-- On hover (the title's or the cover's) the title and its arrow box take the link
 				     hover colour together; a title that links nowhere stays put. -->
 				<Link
 					{...linkProps}
 					class:list={[
-						'group flex items-center gap-[6px]',
+						'group flex items-center gap-[5.48px] md:gap-[6px]',
 						{
 							'transition-colors hover:text-link-hover [.card:has(.cover-link:hover)_&]:text-link-hover': href,
 							'has-hint': external(href),
@@ -153,18 +154,18 @@ const posterLeft = `max(calc(980px + ${POSTER_GAP}px + ${posterTilt}), ${posterP
 					{heading}
 					{
 						href && (
-							<span class="mt-[5px] mr-1 flex size-5 shrink-0 bg-white transition-colors group-hover:bg-link-hover [.card:has(.cover-link:hover)_&]:bg-link-hover" aria-hidden="true">
-								<span class="icon mt-[3.53px] ml-[3.33px] size-[13.333px] text-black" style={`--icon: url("${titleArrow}")`} />
+							<span class="mt-[4.57px] mr-[3.65px] flex size-[18.26px] shrink-0 md:mt-[5px] md:mr-1 md:size-5 bg-white transition-colors group-hover:bg-link-hover [.card:has(.cover-link:hover)_&]:bg-link-hover" aria-hidden="true">
+								<span class="icon mt-[3.22px] ml-[3.04px] size-[12.17px] text-black md:mt-[3.53px] md:ml-[3.33px] md:size-[13.333px]" style={`--icon: url("${titleArrow}")`} />
 							</span>
 						)
 					}
 					{external(href) && <LinkHint href={href!} plain />}
 				</Link>
 			</h2>
-			{subtitle && <p class="text-base text-white italic md:text-xl">{subtitle}</p>}
+			{subtitle && <p class="text-lg text-white italic md:text-xl">{subtitle}</p>}
 			{
 				paragraphs.length > 0 && (
-					<div class="text-base text-cream md:text-xl [&>p+p]:mt-[1lh]">
+					<div class="text-lg text-cream md:text-xl [&>p+p]:mt-[1lh]">
 						{paragraphs.map((runs) => (
 							<p>{runs.map((r) => (r.em ? <em>{r.text}</em> : r.text))}</p>
 						))}
@@ -178,7 +179,7 @@ const posterLeft = `max(calc(980px + ${POSTER_GAP}px + ${posterTilt}), ${posterP
 	     down to 16px), their arrows and spacing with them. -->
 	{
 		linkList.length > 0 && (
-			<ul class="flex flex-col items-start gap-[0.33em] text-xl md:text-[clamp(16px,2.6vh,24px)]">
+			<ul class="mt-auto flex shrink-0 flex-col items-start gap-[0.33em] text-[18.48px] md:mt-0 md:text-[clamp(16px,2.6vh,24px)]">
 				{linkList.map((l) => (
 					<li>
 						<a
