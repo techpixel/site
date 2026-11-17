@@ -1,5 +1,1 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24.5" height="24" viewBox="0 0 24.5 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Group 60">
-<path id="Vector" d="M12 0V4M12 20V24M3.5 3.5L6.34 6.34M17.66 17.66L20.5 20.5M0 12H4M20 12H24.5M6.34 17.66L3.5 20.5M20.5 3.5L17.66 6.34M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke-width="2" stroke-linejoin="round" stroke="#FFEEDC"/>
-</g>
-</svg>
+<svg id="sun-solid" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="17 10 17 14 16 14 16 15 15 15 15 16 14 16 14 17 10 17 10 16 9 16 9 15 8 15 8 14 7 14 7 10 8 10 8 9 9 9 9 8 10 8 10 7 14 7 14 8 15 8 15 9 16 9 16 10 17 10"/><path d="m21,11v-1h1v-1h1v-2h-3v-1h-2v-2h-1V1h-2v1h-1v1h-1v1h-2v-1h-1v-1h-1v-1h-2v3h-1v2h-2v1H1v2h1v1h1v1h1v2h-1v1h-1v1h-1v2h3v1h2v2h1v3h2v-1h1v-1h1v-1h2v1h1v1h1v1h2v-3h1v-2h2v-1h3v-2h-1v-1h-1v-1h-1v-2h1Zm-3,4h-1v1h-1v1h-1v1h-6v-1h-1v-1h-1v-1h-1v-6h1v-1h1v-1h1v-1h6v1h1v1h1v1h1v6Z"/></svg>

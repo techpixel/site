@@ -2,11 +2,14 @@
 import badgeStroke from '../assets/figma/badge-stroke.svg?url';
 import badgeNew from '../assets/figma/badge-new.svg?url';
 import iconSun from '../assets/figma/icon-sun.svg?url';
+import iconMoon from '../assets/figma/icon-moon.svg?url';
 import iconLinkedin from '../assets/figma/icon-linkedin.svg?url';
 import iconGithub from '../assets/figma/icon-github.svg?url';
 import iconInstagram from '../assets/figma/icon-instagram.svg?url';
 import iconX from '../assets/figma/icon-x.svg?url';
 import iconArena from '../assets/figma/icon-arena.svg?url';
+import day from '../assets/day.webp';
+import night from '../assets/night.webp';
 import site from '../data/site.json';
 
 const socialIcons: Record<string, string> = {
@@ -79,35 +82,63 @@ const navLink =
 		</a>
 	</div>
 
-	<!-- Theme toggle (dark/light) at the left, socials at the right (Figma 2515:1343). -->
-	<div class="flex w-full items-center justify-between pt-4 md:mt-auto md:pt-0">
-		<button
-			type="button"
-			class="theme-toggle block h-6 w-[24.5px] shrink-0 cursor-pointer text-link transition-colors hover:text-link-hover"
-			aria-label="Switch to light mode"
+	<!-- Theme toggle (Figma 2587:862 day / 2587:871 night, 2599:318 thumb): dithered sky
+	     panel with the 24×24 sun badge in the centre, replacing the old sun button. -->
+	<button
+		type="button"
+		class="theme-toggle group relative isolate mt-4 block h-14 w-[153px] shrink-0 cursor-pointer overflow-clip border-4 border-link transition-colors hover:border-link-hover md:mt-0 md:w-full"
+		aria-label="Switch to light mode"
+	>
+		<img
+			src={night.src}
+			width="153"
+			height="56"
+			decoding="async"
+			loading="eager"
+			alt=""
+			class="theme-img-night pointer-events-none absolute inset-0 size-full object-cover"
+		/>
+		<img
+			src={day.src}
+			width="153"
+			height="56"
+			decoding="async"
+			loading="eager"
+			alt=""
+			class="theme-img-day pointer-events-none absolute inset-0 size-full object-cover"
+		/>
+		<canvas
+			class="theme-canvas pointer-events-none absolute inset-0 size-full [image-rendering:pixelated]"
+			aria-hidden="true"
+		></canvas>
+		<span
+			class="pointer-events-none absolute top-1/2 left-1/2 flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-link text-(--sidebar-ink) transition-colors group-hover:bg-link-hover"
+			aria-hidden="true"
 		>
-			<span class="icon size-full" style={`--icon: url("${iconSun}")`}></span>
-		</button>
-		<ul class="flex items-center gap-2">
-			{
-				site.socials
-					.filter((s) => s.href)
-					.map((s) => (
-						<li>
-							<a
-								href={s.href}
-								target={s.href.startsWith('http') ? '_blank' : undefined}
-								rel="noopener"
-								aria-label={s.label}
-								class="block size-6 text-link transition-colors hover:text-link-hover"
-							>
-								<span class="icon size-full" style={`--icon: url("${socialIcons[s.id]}")`} />
-							</a>
-						</li>
-					))
-			}
-		</ul>
-	</div>
+			<span class="theme-icon-moon icon size-[18px]" style={`--icon: url("${iconMoon}")`}></span>
+			<span class="theme-icon-sun icon size-[18px]" style={`--icon: url("${iconSun}")`}></span>
+		</span>
+	</button>
+
+	<ul class="flex items-center gap-2 pt-2 md:mt-auto md:pt-0">
+		{
+			site.socials
+				.filter((s) => s.href)
+				.map((s) => (
+					<li>
+						<a
+							href={s.href}
+							target={s.href.startsWith('http') ? '_blank' : undefined}
+							rel="noopener"
+							aria-label={s.label}
+							class="block size-6 text-link transition-colors hover:text-link-hover"
+						>
+							<span class="icon size-full" style={`--icon: url("${socialIcons[s.id]}")`} />
+						</a>
+					</li>
+				))
+		}
+	</ul>
 </aside>
 
 <style>
@@ -122,6 +153,31 @@ const navLink =
 	}
 	:global(::view-transition-new(sidebar)) {
 		animation: none;
+	}
+
+	.theme-img-day,
+	.theme-icon-sun {
+		opacity: 0;
+	}
+	.theme-icon-sun {
+		display: none;
+	}
+	:global(:root[data-theme='light']) .theme-img-night,
+	:global(:root[data-theme='light']) .theme-icon-moon {
+		opacity: 0;
+	}
+	:global(:root[data-theme='light']) .theme-icon-moon {
+		display: none;
+	}
+	:global(:root[data-theme='light']) .theme-img-day,
+	:global(:root[data-theme='light']) .theme-icon-sun {
+		opacity: 1;
+	}
+	:global(:root[data-theme='light']) .theme-icon-sun {
+		display: block;
+	}
+	:global(html.js) .theme-toggle img {
+		opacity: 0;
 	}
 
 	/* The fill sweeps in from the left as it fades in: faint cream on hover, solid cream
@@ -182,6 +238,9 @@ const navLink =
 </style>
 
 <script>
+	import { ditherTiles, TILE_CELLS } from '../lib/dither';
+	import { shades } from '../lib/color';
+
 	// The sidebar persists across client-side navigations, so re-mark the current page's
 	// nav item as soon as each new page swaps in.
 	const navLinks = () => document.querySelectorAll<HTMLAnchorElement>('.sidebar nav[aria-label="Primary"] a');
@@ -353,22 +412,244 @@ const navLink =
 		swapPhase = undefined;
 	}
 
-	// The sun button flips between the dark and light themes (data-theme on <html>, kept
-	// in localStorage; Layout.astro applies it before the first paint).
+	// Theme toggle: dithers the night (stars) and day (clouds) photos into 4px tiles in
+	// eight shades between the page's ink and link colours, pulses a dither wave across
+	// the tiles on hover, and sweeps a radial dither wave from the click point to transition
+	// between the two skies when switching themes.
+	const SHADES = 8;
+	const TILE_PX = 4;
+	const nightRamp = shades([0x2f, 0x30, 0x39], [0xf8, 0xd2, 0xaa], SHADES);
+	const dayRamp = shades([0x5f, 0x65, 0x91], [0xff, 0xee, 0xdc], SHADES);
+	const scatter = (x: number, y: number) => {
+		const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+		return n - Math.floor(n);
+	};
+
+	let cw = 0;
+	let ch = 0;
+	let nightLevels: Uint8Array | undefined;
+	let dayLevels: Uint8Array | undefined;
+	let waveFrame = 0;
+	let waveMode: 'switch' | 'pulse' | null = null;
+	let waveStart = 0;
+	let waveOx = 0;
+	let waveOy = 0;
+	let waveFromLight = false;
+	let waveToLight = false;
+
+	const isLight = () => document.documentElement.dataset.theme === 'light';
+	const themeCanvas = () => document.querySelector<HTMLCanvasElement>('.theme-canvas');
+	const nightImg = () => document.querySelector<HTMLImageElement>('.theme-img-night');
+	const dayImg = () => document.querySelector<HTMLImageElement>('.theme-img-day');
+
+	function bakeLevels(img: HTMLImageElement | null, width: number, height: number, starry = false): Uint8Array | undefined {
+		if (!img || !img.complete || !img.naturalWidth || !width || !height) return undefined;
+		const off = document.createElement('canvas');
+		off.width = width;
+		off.height = height;
+		const octx = off.getContext('2d', { willReadFrequently: true });
+		if (!octx) return undefined;
+		octx.imageSmoothingEnabled = true;
+		octx.imageSmoothingQuality = 'high';
+		const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+		const iw = img.naturalWidth * scale;
+		const ih = img.naturalHeight * scale;
+		octx.drawImage(img, (width - iw) / 2, (height - ih) / 2, iw, ih);
+		const raw = octx.getImageData(0, 0, width, height);
+		const dithered = ditherTiles(raw, starry ? { colors: SHADES, clip: 0.78, gamma: 2.4 } : { colors: SHADES });
+		const levels = new Uint8Array(width * height);
+		for (let p = 0; p < levels.length; p++) levels[p] = dithered.data[p * 4];
+		if (starry) {
+			// Single-cell stars average out across a 4×4 tile, so let individual star peaks
+			// keep their own brightness above the dark sky.
+			const lumas = new Float32Array(levels.length);
+			for (let p = 0; p < lumas.length; p++) {
+				const i = p * 4;
+				lumas[p] = 0.2126 * raw.data[i] + 0.7152 * raw.data[i + 1] + 0.0722 * raw.data[i + 2];
+			}
+			const sorted = Float32Array.from(lumas).sort();
+			const floor = sorted[Math.floor(sorted.length * 0.9)] ?? 20;
+			const peak = sorted[Math.floor(sorted.length * 0.997)] || 255;
+			const span = Math.max(1, peak - floor);
+			for (let p = 0; p < levels.length; p++) {
+				if (lumas[p] > floor) {
+					const t = Math.min(1, (lumas[p] - floor) / span) ** 0.75;
+					const starLevel = Math.min(SHADES - 1, 2 + Math.round(t * (SHADES - 3)));
+					if (starLevel > levels[p]) levels[p] = starLevel;
+				}
+			}
+		}
+		return levels;
+	}
+
+	function drawStatic(light = isLight()) {
+		const canvas = themeCanvas();
+		const ctx = canvas?.getContext('2d');
+		const levels = light ? dayLevels : nightLevels;
+		const ramp = light ? dayRamp : nightRamp;
+		if (!canvas || !ctx || !levels || !cw || !ch) return;
+		const out = ctx.createImageData(cw, ch);
+		const { data } = out;
+		for (let p = 0; p < levels.length; p++) {
+			const [r, g, b] = ramp[levels[p]] ?? [0, 0, 0];
+			const i = p * 4;
+			data[i] = r;
+			data[i + 1] = g;
+			data[i + 2] = b;
+			data[i + 3] = 255;
+		}
+		ctx.putImageData(out, 0, 0);
+	}
+
+	function runWave(now: number) {
+		waveFrame = 0;
+		const canvas = themeCanvas();
+		const ctx = canvas?.getContext('2d');
+		if (!canvas || !ctx || !cw || !ch || !nightLevels || !dayLevels || !waveMode) {
+			drawStatic();
+			return;
+		}
+		const duration = waveMode === 'switch' ? 520 : 560;
+		const rawT = Math.min(1, (now - waveStart) / duration);
+		if (rawT >= 1) {
+			waveMode = null;
+			drawStatic();
+			return;
+		}
+		const eased = waveMode === 'switch' ? 1 - (1 - rawT) ** 2.4 : 1 - (1 - rawT) ** 1.7;
+		const SCATTER = 0.1;
+		const CHECKER = 0.06;
+		const CREST = waveMode === 'switch' ? 0.2 : 0.26;
+		const SPAN = 1 + SCATTER + CHECKER + CREST;
+		const pos = eased * SPAN;
+		const maxDist =
+			Math.max(
+				Math.hypot(waveOx, waveOy),
+				Math.hypot(cw - waveOx, waveOy),
+				Math.hypot(waveOx, ch - waveOy),
+				Math.hypot(cw - waveOx, ch - waveOy),
+			) || 1;
+
+		const fromLevels = waveFromLight ? dayLevels : nightLevels;
+		const toLevels = waveToLight ? dayLevels : nightLevels;
+		const fromRamp = waveFromLight ? dayRamp : nightRamp;
+		const toRamp = waveToLight ? dayRamp : nightRamp;
+
+		const out = ctx.createImageData(cw, ch);
+		const { data } = out;
+		for (let y = 0; y < ch; y++) {
+			const ty = y >> 2;
+			for (let x = 0; x < cw; x++) {
+				const tx = x >> 2;
+				const p = y * cw + x;
+				const dist = Math.hypot(x - waveOx, y - waveOy) / maxDist;
+				const turn = dist + (scatter(tx, ty) - 0.5) * SCATTER + ((x + y) & 1 ? CHECKER : 0);
+				const delta = pos - turn;
+				let color: number[];
+				if (waveMode === 'switch') {
+					if (delta < 0) {
+						color = fromRamp[fromLevels[p]];
+					} else if (delta < CREST) {
+						const u = delta / CREST;
+						const boost = Math.round(Math.sin(u * Math.PI) * 3);
+						color =
+							u < 0.5
+								? fromRamp[Math.min(SHADES - 1, fromLevels[p] + boost)]
+								: toRamp[Math.min(SHADES - 1, toLevels[p] + boost)];
+					} else {
+						color = toRamp[toLevels[p]];
+					}
+				} else {
+					const base = toLevels[p];
+					const boost = delta >= 0 && delta < CREST ? Math.round(Math.sin((delta / CREST) * Math.PI) * 2) : 0;
+					color = toRamp[Math.min(SHADES - 1, base + boost)];
+				}
+				const i = p * 4;
+				data[i] = color[0];
+				data[i + 1] = color[1];
+				data[i + 2] = color[2];
+				data[i + 3] = 255;
+			}
+		}
+		ctx.putImageData(out, 0, 0);
+		waveFrame = requestAnimationFrame(runWave);
+	}
+
+	function startWave(mode: 'switch' | 'pulse', clientX?: number, clientY?: number, fromLight = isLight(), toLight = isLight()) {
+		const canvas = themeCanvas();
+		if (!canvas || !cw || !ch || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			drawStatic(toLight);
+			return;
+		}
+		const rect = canvas.getBoundingClientRect();
+		if (clientX !== undefined && clientY !== undefined && rect.width > 0 && rect.height > 0) {
+			waveOx = Math.max(0, Math.min(cw, ((clientX - rect.left) / rect.width) * cw));
+			waveOy = Math.max(0, Math.min(ch, ((clientY - rect.top) / rect.height) * ch));
+		} else {
+			waveOx = cw / 2;
+			waveOy = ch / 2;
+		}
+		waveMode = mode;
+		waveFromLight = fromLight;
+		waveToLight = toLight;
+		waveStart = performance.now();
+		if (waveFrame) cancelAnimationFrame(waveFrame);
+		waveFrame = requestAnimationFrame(runWave);
+	}
+
+	function rebuildThemeCanvas() {
+		const canvas = themeCanvas();
+		if (!canvas) return;
+		const w = Math.round(canvas.clientWidth * devicePixelRatio);
+		const h = Math.round(canvas.clientHeight * devicePixelRatio);
+		if (!w || !h) return;
+		const px = Math.max(1, Math.round((TILE_PX / TILE_CELLS) * devicePixelRatio));
+		const nextCw = Math.max(1, Math.round(w / px));
+		const nextCh = Math.max(1, Math.round(h / px));
+		if (nextCw !== cw || nextCh !== ch || !nightLevels || !dayLevels) {
+			cw = nextCw;
+			ch = nextCh;
+			canvas.width = cw;
+			canvas.height = ch;
+			nightLevels = bakeLevels(nightImg(), cw, ch, true);
+			dayLevels = bakeLevels(dayImg(), cw, ch);
+		}
+		if (!waveMode) drawStatic();
+	}
+
+	function initThemeCanvas() {
+		const nImg = nightImg();
+		const dImg = dayImg();
+		if (nImg && !nImg.complete) nImg.addEventListener('load', rebuildThemeCanvas, { once: true });
+		if (dImg && !dImg.complete) dImg.addEventListener('load', rebuildThemeCanvas, { once: true });
+		rebuildThemeCanvas();
+	}
+	addEventListener('resize', rebuildThemeCanvas);
+	initThemeCanvas();
+
 	const syncToggle = () => {
-		const light = document.documentElement.dataset.theme === 'light';
+		const light = isLight();
 		document.querySelector('.theme-toggle')?.setAttribute('aria-label', `Switch to ${light ? 'dark' : 'light'} mode`);
 	};
+	document.addEventListener('pointerover', (e) => {
+		const btn = (e.target as Element | null)?.closest<HTMLElement>('.theme-toggle');
+		if (!btn || (e.relatedTarget instanceof Node && btn.contains(e.relatedTarget))) return;
+		if (waveMode === 'switch') return;
+		startWave('pulse', e.clientX, e.clientY);
+	});
 	document.addEventListener('click', (e) => {
 		if (!(e.target as Element | null)?.closest('.theme-toggle')) return;
 		const html = document.documentElement;
-		const light = html.dataset.theme !== 'light';
+		const prevLight = html.dataset.theme === 'light';
+		const light = !prevLight;
 		if (light) html.dataset.theme = 'light';
 		else delete html.dataset.theme;
 		try {
 			localStorage.setItem('theme', light ? 'light' : 'dark');
 		} catch {}
 		syncToggle();
+		const me = e as MouseEvent;
+		startWave('switch', me.detail ? me.clientX : undefined, me.detail ? me.clientY : undefined, prevLight, light);
 	});
 
 	document.addEventListener('astro:after-swap', () => {
@@ -378,6 +659,7 @@ const navLink =
 	});
 	document.addEventListener('astro:page-load', () => {
 		syncToggle();
+		initThemeCanvas();
 		markCurrent();
 		syncStripes();
 	});
