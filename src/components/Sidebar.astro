@@ -469,7 +469,12 @@ const navLink =
 	// between the two skies when switching themes.
 	const SHADES = 8;
 	const TILE_PX = 4;
-	const nightRamp = shades([0x2f, 0x30, 0x39], [0xf8, 0xd2, 0xaa], SHADES);
+	// The night sky's darkest shade is the dark page's: ink, or black on /work (whose page is
+	// black, see global.css), so the sky melts into the page around it. Re-read on each page,
+	// as the sidebar persists across them.
+	const nightOn = (black: boolean) => shades(black ? [0, 0, 0] : [0x2f, 0x30, 0x39], [0xf8, 0xd2, 0xaa], SHADES);
+	let nightRamp = nightOn(false);
+	const syncNight = () => (nightRamp = nightOn(!!document.querySelector('main.work')));
 	const dayRamp = shades([0x5f, 0x65, 0x91], [0xff, 0xee, 0xdc], SHADES);
 	const scatter = (x: number, y: number) => {
 		const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
@@ -653,6 +658,7 @@ const navLink =
 	}
 
 	function rebuildThemeCanvas() {
+		syncNight();
 		const canvas = themeCanvas();
 		if (!canvas) return;
 		const w = Math.round(canvas.clientWidth * devicePixelRatio);
