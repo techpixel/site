@@ -100,6 +100,41 @@ body {
 	animation-duration: 120ms;
 }
 
+/* Switching themes (src/lib/theme-wave.ts): the new page is masked in over the old one in
+   a dither wave, with no cross-fade. The sidebar and "Loading..." give up their own layers
+   so the wave crosses them too. The hold animation does nothing but keep the transition
+   open while the script redraws the mask. */
+html.theme-wave :is(.sidebar, .loading-text) {
+	view-transition-name: none;
+}
+/* The toggle plays its own wave between the skies, so it stays live, out of the mask. */
+html.theme-wave .theme-toggle {
+	view-transition-name: theme-toggle;
+}
+html.theme-wave::view-transition-old(theme-toggle) {
+	display: none;
+}
+html.theme-wave::view-transition-group(theme-toggle),
+html.theme-wave::view-transition-new(theme-toggle) {
+	animation: none;
+}
+html.theme-wave::view-transition-old(root),
+html.theme-wave::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+html.theme-wave::view-transition-new(root) {
+	mask:
+		var(--theme-wave-a) 0 0 / 100% 100% no-repeat,
+		var(--theme-wave-b) 0 0 / 100% 100% no-repeat;
+	animation: theme-wave-hold var(--theme-wave-ms) linear;
+}
+@keyframes theme-wave-hold {
+	to {
+		opacity: 1;
+	}
+}
+
 @keyframes page-in {
 	from {
 		opacity: 0;

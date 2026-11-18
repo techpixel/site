@@ -273,6 +273,7 @@ const navLink =
 <script>
 	import { ditherTiles, TILE_CELLS } from '../lib/dither';
 	import { shades } from '../lib/color';
+	import { themeWave } from '../lib/theme-wave';
 
 	// The sidebar persists across client-side navigations, so re-mark the current page's
 	// nav item as soon as each new page swaps in.
@@ -534,6 +535,18 @@ const navLink =
 		ctx.putImageData(out, 0, 0);
 	}
 
+	// The waves' shape: each tile's turn is its distance from the origin (as a fraction of the
+	// furthest corner), give or take SCATTER, the checker's off cells CHECKER later. A switch
+	// runs SWITCH_MS, easing out, and crosses each tile over a crest SWITCH_CREST wide.
+	const SCATTER = 0.1;
+	const CHECKER = 0.06;
+	const SWITCH_MS = 520;
+	const SWITCH_CREST = 0.2;
+	const switchEase = (t: number) => 1 - (1 - t) ** 2.4;
+	// The canvas's furthest corner from (ox, oy), in canvas pixels.
+	const reach = (ox: number, oy: number) =>
+		Math.max(Math.hypot(ox, oy), Math.hypot(cw - ox, oy), Math.hypot(ox, ch - oy), Math.hypot(cw - ox, ch - oy)) || 1;
+
 	function runWave(now: number) {
 		waveFrame = 0;
 		const canvas = themeCanvas();
@@ -542,26 +555,18 @@ const navLink =
 			drawStatic();
 			return;
 		}
-		const duration = waveMode === 'switch' ? 520 : 560;
+		const duration = waveMode === 'switch' ? SWITCH_MS : 560;
 		const rawT = Math.min(1, (now - waveStart) / duration);
 		if (rawT >= 1) {
 			waveMode = null;
 			drawStatic();
 			return;
 		}
-		const eased = waveMode === 'switch' ? 1 - (1 - rawT) ** 2.4 : 1 - (1 - rawT) ** 1.7;
-		const SCATTER = 0.1;
-		const CHECKER = 0.06;
-		const CREST = waveMode === 'switch' ? 0.2 : 0.26;
+		const eased = waveMode === 'switch' ? switchEase(rawT) : 1 - (1 - rawT) ** 1.7;
+		const CREST = waveMode === 'switch' ? SWITCH_CREST : 0.26;
 		const SPAN = 1 + SCATTER + CHECKER + CREST;
 		const pos = eased * SPAN;
-		const maxDist =
-			Math.max(
-				Math.hypot(waveOx, waveOy),
-				Math.hypot(cw - waveOx, waveOy),
-				Math.hypot(waveOx, ch - waveOy),
-				Math.hypot(cw - waveOx, ch - waveOy),
-			) || 1;
+		const maxDist = reach(waveOx, waveOy);
 
 		const fromLevels = waveFromLight ? dayLevels : nightLevels;
 		const toLevels = waveToLight ? dayLevels : nightLevels;
@@ -671,18 +676,30 @@ const navLink =
 		startWave('pulse', e.clientX, e.clientY);
 	});
 	document.addEventListener('click', (e) => {
-		if (!(e.target as Element | null)?.closest('.theme-toggle')) return;
+		const btn = (e.target as Element | null)?.closest('.theme-toggle');
+		if (!btn) return;
 		const html = document.documentElement;
 		const prevLight = html.dataset.theme === 'light';
 		const light = !prevLight;
-		if (light) html.dataset.theme = 'light';
-		else delete html.dataset.theme;
-		try {
-			localStorage.setItem('theme', light ? 'light' : 'dark');
-		} catch {}
-		syncToggle();
+		// The page ripples over from the click (or the toggle's middle, from the keyboard),
+		// held inside the sky as the toggle's own wave is, so the two start from one point.
 		const me = e as MouseEvent;
+		const box = (themeCanvas() ?? btn).getBoundingClientRect();
+		const x = me.detail ? Math.max(box.left, Math.min(box.right, me.clientX)) : box.left + box.width / 2;
+		const y = me.detail ? Math.max(box.top, Math.min(box.bottom, me.clientY)) : box.top + box.height / 2;
 		startWave('switch', me.detail ? me.clientX : undefined, me.detail ? me.clientY : undefined, prevLight, light);
+		themeWave(
+			() => {
+				if (light) html.dataset.theme = 'light';
+				else delete html.dataset.theme;
+				try {
+					localStorage.setItem('theme', light ? 'light' : 'dark');
+				} catch {}
+				syncToggle();
+			},
+			x,
+			y,
+		);
 	});
 
 	document.addEventListener('astro:after-swap', () => {
