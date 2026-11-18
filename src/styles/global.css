@@ -18,8 +18,9 @@
 	--color-black: #000;
 	--color-white: #fff;
 
-	/* The portrait's dithered cells, the same in both themes: lit in the cream, dark in the
-	   ink, so it melts into the page at its darks in dark mode and its lights in light. */
+	/* The portrait's dithered cells: lit in the cream, dark in the ink, so it melts into the
+	   page at its darks. Light mode keeps the cream (melting in at its lights) and darkens
+	   in the link blue instead, the day sky's colours on the theme toggle. */
 	--color-portrait-tint: #ffeedc;
 	--color-portrait-shade: #2f3039;
 	/* Near-inks outside the palette: the checkerboard and the ghosted headline. */
@@ -53,6 +54,7 @@
 	--color-white: #2f3039;
 	--color-misc-ink-light: #f6e2cc;
 	--color-misc-ghost: #f3dfc9;
+	--color-portrait-shade: #5f6591;
 	color-scheme: light;
 }
 
