@@ -112,7 +112,7 @@ const navLink =
 			aria-hidden="true"
 		></canvas>
 		<span
-			class="pointer-events-none absolute top-1/2 left-1/2 flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-link text-(--sidebar-ink) transition-colors group-hover:bg-link-hover"
+			class="theme-badge pointer-events-none absolute top-1/2 left-1/2 flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-link text-(--sidebar-ink) transition-colors group-hover:bg-link-hover"
 			aria-hidden="true"
 		>
 			<span class="theme-icon-moon icon size-[18px]" style={`--icon: url("${iconMoon}")`}></span>
@@ -208,6 +208,23 @@ const navLink =
 	}
 	:global(:root[data-theme='light']) .theme-icon-sun {
 		display: block;
+	}
+	/* Resting on the toggle through a theme switch (the script): the page transition's overlay
+	   can take :hover off the toggle while the pointer rests on it, so its hover look is kept
+	   by hand. */
+	@media (hover: hover) {
+		:global(html.theme-wave) .theme-toggle.resting {
+			border-color: var(--color-link-hover);
+		}
+		:global(html.theme-wave) .theme-toggle.resting .theme-badge {
+			background-color: var(--color-link-hover);
+		}
+	}
+	/* And its cursor: whatever the overlay leaves the pointer over takes the toggle's, so it
+	   stays a pointer until the pointer moves off. */
+	:global(html.theme-wave:has(.theme-toggle.resting)),
+	:global(html.theme-wave:has(.theme-toggle.resting)::view-transition) {
+		cursor: pointer;
 	}
 	:global(html.js) .theme-toggle img {
 		opacity: 0;
@@ -669,10 +686,26 @@ const navLink =
 		const light = isLight();
 		document.querySelector('.theme-toggle')?.setAttribute('aria-label', `Switch to ${light ? 'dark' : 'light'} mode`);
 	};
+	// A click on the toggle leaves the pointer resting there until it really moves off the
+	// toggle's box (coming back into the window elsewhere counts). The theme switch's page
+	// transition puts an overlay over the page that can take the hover from the toggle and
+	// hand it back when it goes, though the pointer never moved; going by where the pointer
+	// is rather than what it's over, that neither drops the toggle's hover look (`resting`,
+	// see the styles) nor pulses it again.
+	let resting = false;
+	const rest = (on: boolean) => {
+		resting = on;
+		document.querySelector('.theme-toggle')?.classList.toggle('resting', on);
+	};
+	document.addEventListener('pointermove', (e) => {
+		if (!resting) return;
+		const box = document.querySelector('.theme-toggle')?.getBoundingClientRect();
+		if (!box || e.clientX < box.left || e.clientX >= box.right || e.clientY < box.top || e.clientY >= box.bottom) rest(false);
+	});
 	document.addEventListener('pointerover', (e) => {
 		const btn = (e.target as Element | null)?.closest<HTMLElement>('.theme-toggle');
 		if (!btn || (e.relatedTarget instanceof Node && btn.contains(e.relatedTarget))) return;
-		if (waveMode === 'switch') return;
+		if (resting || waveMode === 'switch') return;
 		startWave('pulse', e.clientX, e.clientY);
 	});
 	document.addEventListener('click', (e) => {
@@ -684,6 +717,8 @@ const navLink =
 		// The page ripples over from the click (or the toggle's middle, from the keyboard),
 		// held inside the sky as the toggle's own wave is, so the two start from one point.
 		const me = e as MouseEvent;
+		// A click from a mouse or pen (not the keyboard, or a finger) leaves it resting there.
+		if (me.detail && (e as PointerEvent).pointerType !== 'touch') rest(true);
 		const box = (themeCanvas() ?? btn).getBoundingClientRect();
 		const x = me.detail ? Math.max(box.left, Math.min(box.right, me.clientX)) : box.left + box.width / 2;
 		const y = me.detail ? Math.max(box.top, Math.min(box.bottom, me.clientY)) : box.top + box.height / 2;
