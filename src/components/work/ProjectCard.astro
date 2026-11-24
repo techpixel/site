@@ -118,7 +118,7 @@ const posterPlace =
 const posterLeft = `max(calc(980px + ${POSTER_GAP}px + ${posterTilt}), ${posterPlace})`;
 ---
 
-<li id={id} class:list={['card flex w-full shrink-0 snap-start snap-always flex-col items-start gap-6 overflow-y-auto px-6 [scrollbar-width:none] md:overflow-visible md:min-h-[max(640px,calc(100vh-48px))] md:px-0 md:pb-7', className]}>
+<li id={id} class:list={['card flex w-full shrink-0 snap-start snap-always flex-col items-start gap-6 overflow-x-hidden overflow-y-auto px-6 [scrollbar-width:none] md:overflow-visible md:min-h-[max(640px,calc(100vh-48px))] md:px-0 md:pb-7', className]}>
 	<div class="flex min-h-0 w-full flex-col items-start gap-[9.2px] md:gap-4">
 		<!-- The cover repeats the title's link, so it stays out of the tab order. On phones it
 		     gives up height (whole, never cropped) when the project needs more of the screen. -->
